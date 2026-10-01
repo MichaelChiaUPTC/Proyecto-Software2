@@ -1,0 +1,176 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Opciones de color y tipografía · Lógica UPTC</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600&family=Geist+Mono&family=Inter:wght@400;500;600&family=JetBrains+Mono&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono&family=Source+Sans+3:wght@400;500;600&family=Source+Code+Pro&family=Manrope:wght@400;500;600;700&family=Fira+Code&family=Figtree:wght@400;500;600&family=DM+Mono&display=swap" rel="stylesheet">
+<style>
+  :root { --font: 'Geist', sans-serif; --mono: 'Geist Mono', monospace; }
+  * { box-sizing: border-box; }
+  body { margin: 0; font-family: 'Inter', system-ui, sans-serif; background: #f4f4f2; color: #1d1c1a; }
+  .wrap { display: grid; grid-template-columns: 340px 1fr; min-height: 100vh; }
+  .panel { padding: 24px; border-right: 1px solid #deddd8; background: #fff; position: sticky; top: 0; height: 100vh; overflow: auto; }
+  .panel h1 { font-size: 18px; margin: 0 0 4px; }
+  .panel p.sub { margin: 0 0 20px; font-size: 13px; color: #6b6a65; }
+  .panel h2 { font-size: 12px; text-transform: uppercase; letter-spacing: .06em; color: #6b6a65; margin: 24px 0 8px; }
+  .opts { display: flex; flex-direction: column; gap: 6px; }
+  .opt { display: flex; align-items: center; gap: 12px; padding: 8px 10px; border: 1px solid #deddd8; border-radius: 8px; background: #fff; cursor: pointer; text-align: left; font: inherit; color: inherit; }
+  .opt:hover { background: #f4f4f2; }
+  .opt[aria-pressed="true"] { border-color: #1d1c1a; box-shadow: 0 0 0 1px #1d1c1a; }
+  .sw { display: flex; flex: none; border-radius: 6px; overflow: hidden; border: 1px solid #0001; }
+  .sw i { width: 18px; height: 28px; display: block; }
+  .opt b { font-size: 14px; display: block; } .opt small { color: #6b6a65; font-size: 12px; }
+  .seg { display: flex; border: 1px solid #deddd8; border-radius: 8px; overflow: hidden; }
+  .seg button { flex: 1; padding: 8px; border: 0; background: #fff; font: inherit; cursor: pointer; }
+  .seg button[aria-pressed="true"] { background: #1d1c1a; color: #fff; }
+  .out { margin-top: 20px; }
+  .out button { width: 100%; padding: 10px; border-radius: 8px; border: 1px solid #1d1c1a; background: #1d1c1a; color: #fff; font: inherit; cursor: pointer; }
+  pre.css { margin: 10px 0 0; padding: 12px; background: #f4f4f2; border-radius: 8px; font-size: 11px; line-height: 1.5; overflow: auto; max-height: 220px; font-family: ui-monospace, Consolas, monospace; white-space: pre-wrap; }
+
+  /* ───── Vista previa (usa las variables elegidas) ───── */
+  .stage { padding: 32px; display: flex; align-items: flex-start; justify-content: center; }
+  .app { --r: 8px; width: 100%; max-width: 980px; display: grid; grid-template-columns: 210px 1fr; border: 1px solid var(--line); border-radius: 14px; overflow: hidden; background: var(--bg); color: var(--ink); font-family: var(--font); font-size: 15px; line-height: 1.5; transition: background .2s, color .2s; }
+  .side { background: var(--sunken); border-right: 1px solid var(--line); padding: 16px 12px; display: flex; flex-direction: column; gap: 4px; }
+  .brand { display: flex; align-items: center; gap: 10px; font-weight: 650; padding: 4px 8px 16px; }
+  .mark { width: 26px; height: 26px; border-radius: 7px; background: var(--ink); position: relative; }
+  .mark::after { content: ''; position: absolute; right: 5px; bottom: 5px; width: 7px; height: 7px; border-radius: 50%; background: var(--accent); }
+  .nav { padding: 8px 10px; border-radius: var(--r); color: var(--ink2); font-weight: 500; font-size: 14px; border: 1px solid transparent; }
+  .nav.on { background: var(--raised); border-color: var(--line); color: var(--ink); font-weight: 600; }
+  .main { padding: 28px 32px 32px; display: flex; flex-direction: column; gap: 22px; min-width: 0; }
+  h3 { margin: 0; font-size: 26px; letter-spacing: -.025em; font-weight: 600; }
+  .muted { color: var(--ink3); font-size: 13px; }
+  .panelc { border: 1px solid var(--line); background: var(--raised); border-radius: 12px; padding: 20px; display: flex; flex-direction: column; gap: 14px; }
+  .row { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; }
+  .row b { font-size: 17px; letter-spacing: -.01em; }
+  .bar { height: 8px; border-radius: 99px; background: var(--hover); overflow: hidden; } .bar i { display: block; width: 62%; height: 100%; background: var(--accent); }
+  .btns { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+  .btn { height: 36px; padding: 0 16px; border-radius: var(--r); border: 1px solid transparent; font: 550 14px var(--font); cursor: default; }
+  .btn.p { background: var(--primary); color: var(--onprimary); }
+  .btn.s { background: var(--raised); border-color: var(--lineS); color: var(--ink); }
+  .badge { display: inline-block; font-size: 12px; font-weight: 550; padding: 2px 8px; border-radius: 6px; border: 1px solid var(--accentLine); background: var(--accentSoft); color: var(--accentInk); }
+  .badge.n { border-color: var(--line); background: var(--sunken); color: var(--ink2); }
+  .code { font-family: var(--mono); font-size: 13px; line-height: 1.7; background: var(--code); border: 1px solid var(--line); border-radius: 10px; padding: 14px 16px; white-space: pre; overflow: auto; }
+  .k { color: var(--kw); } .s2 { color: var(--str); } .n2 { color: var(--num); } .c { color: var(--ink3); font-style: italic; }
+  .fb { border-radius: 12px; padding: 12px 14px; font-size: 14px; border: 1px solid; }
+  .fb b { display: block; }
+  .ok { background: var(--okSoft); border-color: var(--okLine); } .ok b { color: var(--ok); }
+  .err { background: var(--errSoft); border-color: var(--errLine); } .err b { color: var(--err); }
+  .two { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+  .dot { display: inline-block; width: 18px; height: 18px; border-radius: 50%; border: 2px solid var(--accent); vertical-align: -4px; margin-right: 6px; position: relative; background: var(--raised);}
+  .dot::after { content:''; position:absolute; inset:3px; border-radius:50%; background: var(--accent); }
+  @media (max-width: 900px) { .wrap { grid-template-columns: 1fr; } .panel { position: static; height: auto; } .app { grid-template-columns: 1fr; } .side { display: none; } .two { grid-template-columns: 1fr; } }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <aside class="panel">
+    <h1>Colores y tipografía</h1>
+    <p class="sub">Elige una combinación; la vista previa se actualiza al instante.</p>
+
+    <h2>Modo</h2>
+    <div class="seg" id="mode"><button data-m="light" aria-pressed="true">Claro</button><button data-m="dark" aria-pressed="false">Oscuro</button></div>
+
+    <h2>Paleta</h2>
+    <div class="opts" id="palettes"></div>
+
+    <h2>Tipografía</h2>
+    <div class="opts" id="fonts"></div>
+
+    <div class="out">
+      <button id="copy">Copiar selección</button>
+      <pre class="css" id="css"></pre>
+    </div>
+  </aside>
+
+  <main class="stage">
+    <div class="app" id="app">
+      <nav class="side" aria-label="Vista previa">
+        <div class="brand"><span class="mark"></span>Lógica <span class="muted">UPTC</span></div>
+        <div class="nav on">Inicio</div><div class="nav">Módulos</div><div class="nav">Ejercicios</div>
+        <div class="nav" style="margin-top:12px">Progreso</div><div class="nav">Insignias</div>
+      </nav>
+      <div class="main">
+        <div><h3>Buenas tardes, Camila</h3><p class="muted" style="margin:6px 0 0">Vas por el módulo 05 de 08 y llevas el 54 % del curso.</p></div>
+        <section class="panelc">
+          <div class="row"><div><span class="muted">Continuar aprendiendo</span><br><b>05 Estructuras condicionales</b></div><b style="font-size:26px">62%</b></div>
+          <div class="bar"><i></i></div>
+          <div><span class="muted">Ejercicio actual</span><div style="font-size:20px;font-weight:600;letter-spacing:-.02em"><span class="dot"></span>El mayor de dos números</div></div>
+          <div class="btns"><span class="btn p">Continuar →</span><span class="btn s">Ver módulo</span><span class="badge">Siguiente paso</span><span class="badge n">Básico</span></div>
+        </section>
+        <div class="code"><span class="k">def</span> es_par(n):
+    <span class="k">if</span> n % <span class="n2">2</span> == <span class="n2">0</span>:
+        <span class="k">return</span> <span class="k">True</span>
+    <span class="k">else</span>:
+        <span class="k">return</span> <span class="k">False</span>  <span class="c"># par o impar</span></div>
+        <div class="two">
+          <div class="fb ok"><b>Correcto</b>El residuo de dividir entre 2 es 0 cuando el número es par.</div>
+          <div class="fb err"><b>Hay un problema</b>Falta el return en la rama else. Revisa: condicionales.</div>
+        </div>
+      </div>
+    </div>
+  </main>
+</div>
+
+<script>
+// Cada paleta define claro y oscuro: bg, sunken, raised, hover, line, lineS, ink, ink2, ink3, primary, onprimary, accent, accentInk, accentSoft, accentLine
+const P = [
+ { id:'oro', name:'Oro UPTC (actual)', note:'Negro y oro institucional',
+   l:{bg:'#fbfaf6',sunken:'#f3f1ec',raised:'#ffffff',hover:'#ebe9e3',line:'#e6e3dc',lineS:'#d3cfc5',ink:'#1f1d19',ink2:'#524f47',ink3:'#6f6b61',primary:'#1f1d19',onprimary:'#fbfaf6',accent:'#e8ae0b',accentInk:'#7a5200',accentSoft:'#fbf2d4',accentLine:'#ecd27a',code:'#f5f3ee',kw:'#a33a7a',str:'#2c7a4b',num:'#9a5a00'},
+   d:{bg:'#1b1a17',sunken:'#22211d',raised:'#2a2823',hover:'#33312b',line:'#38362f',lineS:'#4a473f',ink:'#f3f1ea',ink2:'#cfccc2',ink3:'#a29f94',primary:'#f0bd2e',onprimary:'#231c05',accent:'#f0bd2e',accentInk:'#f5cf62',accentSoft:'#33290f',accentLine:'#6b5718',code:'#201f1b',kw:'#e58fc2',str:'#7fd0a0',num:'#efb860'} },
+ { id:'bosque', name:'Verde bosque', note:'Sereno, académico, muy legible',
+   l:{bg:'#f8faf7',sunken:'#eff3ee',raised:'#ffffff',hover:'#e5ebe4',line:'#dfe7dd',lineS:'#c7d3c4',ink:'#16231b',ink2:'#445448',ink3:'#627166',primary:'#14392a',onprimary:'#f8faf7',accent:'#2f9e6a',accentInk:'#1c6a45',accentSoft:'#e1f3e8',accentLine:'#9fd4b6',code:'#f1f5f0',kw:'#8a3f86',str:'#1c6a45',num:'#a35f10'},
+   d:{bg:'#131a16',sunken:'#19221d',raised:'#202b25',hover:'#2a3730',line:'#2d3b33',lineS:'#40524a',ink:'#eaf2ec',ink2:'#c0cec5',ink3:'#93a699',primary:'#58c791',onprimary:'#08210f',accent:'#58c791',accentInk:'#7fdcae',accentSoft:'#1c3328',accentLine:'#2f6a4d',code:'#171f1b',kw:'#d98bd4',str:'#8fe0b5',num:'#e9b266'} },
+ { id:'azul', name:'Azul tinta', note:'Clásico universitario, sobrio',
+   l:{bg:'#f9fafc',sunken:'#f0f2f7',raised:'#ffffff',hover:'#e5e9f1',line:'#dfe3ec',lineS:'#c8cfdd',ink:'#141a2b',ink2:'#434b63',ink3:'#626b84',primary:'#17306b',onprimary:'#f9fafc',accent:'#2f6fe0',accentInk:'#1d4ea8',accentSoft:'#e3ecfc',accentLine:'#a6c1f3',code:'#f2f4f9',kw:'#b0377a',str:'#1f7a52',num:'#a05a00'},
+   d:{bg:'#11141d',sunken:'#171b26',raised:'#1e2330',hover:'#282e3f',line:'#2b3245',lineS:'#3d465e',ink:'#eaeef8',ink2:'#c0c8dc',ink3:'#929cb6',primary:'#7aa5f5',onprimary:'#0a1633',accent:'#7aa5f5',accentInk:'#9dbcf8',accentSoft:'#1b2744',accentLine:'#34508f',code:'#151925',kw:'#e58bc4',str:'#86d9ac',num:'#eab565'} },
+ { id:'terracota', name:'Terracota', note:'Cálido, cercano, distinto',
+   l:{bg:'#fbf9f7',sunken:'#f4efeb',raised:'#ffffff',hover:'#ebe4de',line:'#e8dfd8',lineS:'#d6c9bf',ink:'#241a15',ink2:'#59473d',ink3:'#78665b',primary:'#2a1d17',onprimary:'#fbf9f7',accent:'#d9602b',accentInk:'#9a3c10',accentSoft:'#fbe7dc',accentLine:'#efb597',code:'#f6f1ed',kw:'#a33a6a',str:'#2b7a4f',num:'#9a5a00'},
+   d:{bg:'#1c1612',sunken:'#231c17',raised:'#2c231d',hover:'#372d25',line:'#3b3028',lineS:'#4f4036',ink:'#f5ede7',ink2:'#d5c7bc',ink3:'#aa9a8d',primary:'#f08a58',onprimary:'#2a1005',accent:'#f08a58',accentInk:'#f6a67e',accentSoft:'#3a2418',accentLine:'#7a4527',code:'#201915',kw:'#e58fb8',str:'#82d0a2',num:'#eeb868'} },
+ { id:'grafito', name:'Grafito + turquesa', note:'Técnico, fresco, tipo herramienta',
+   l:{bg:'#f9fafa',sunken:'#f0f2f2',raised:'#ffffff',hover:'#e5e9e9',line:'#dee3e3',lineS:'#c6cdcd',ink:'#151b1c',ink2:'#434d4f',ink3:'#627072',primary:'#1b2426',onprimary:'#f9fafa',accent:'#12a4a0',accentInk:'#0b6b69',accentSoft:'#dcf3f2',accentLine:'#92d4d1',code:'#f1f4f4',kw:'#a8407c',str:'#1f7a50',num:'#9d5b0a'},
+   d:{bg:'#111617',sunken:'#171d1e',raised:'#1e2627',hover:'#283233',line:'#2a3536',lineS:'#3c4a4c',ink:'#e9f1f1',ink2:'#bfcccd',ink3:'#90a2a4',primary:'#4fd1cc',onprimary:'#06201f',accent:'#4fd1cc',accentInk:'#7fe2de',accentSoft:'#15302f',accentLine:'#296361',code:'#151b1c',kw:'#e48dc4',str:'#86dcaa',num:'#ebb566'} },
+ { id:'vino', name:'Vino', note:'Elegante, con carácter',
+   l:{bg:'#fbf9f9',sunken:'#f4eff0',raised:'#ffffff',hover:'#ebe3e5',line:'#e8dfe1',lineS:'#d5c8cb',ink:'#25171b',ink2:'#5a444a',ink3:'#7a636a',primary:'#4a1424',onprimary:'#fbf9f9',accent:'#b3244b',accentInk:'#8a1536',accentSoft:'#f9e1e8',accentLine:'#e6a3b6',code:'#f6f1f2',kw:'#8b3a8e',str:'#2a7a4f',num:'#9a5a00'},
+   d:{bg:'#1b1316',sunken:'#221a1d',raised:'#2b2125',hover:'#362a2f',line:'#3a2d32',lineS:'#4f3e45',ink:'#f6ecef',ink2:'#d6c5ca',ink3:'#ab959c',primary:'#f0829f',onprimary:'#2d0a16',accent:'#f0829f',accentInk:'#f5a1b8',accentSoft:'#3a1c27',accentLine:'#7a3249',code:'#201719',kw:'#e590d2',str:'#84d4a4',num:'#edb868'} },
+];
+// Semánticos compartidos (ok / error) por modo
+const S = { l:{ok:'#1f7a4d',okSoft:'#e3f4ea',okLine:'#a5d6bb',err:'#b3261e',errSoft:'#fbebe9',errLine:'#eab0ab'}, d:{ok:'#7fd9a8',okSoft:'#16301f',okLine:'#2f6a47',err:'#f19a92',errSoft:'#3a1c1a',errLine:'#7a3733'} };
+
+const F = [
+ { id:'geist', name:'Geist', sub:'Geist Mono · la actual', f:"'Geist', sans-serif", m:"'Geist Mono', monospace" },
+ { id:'inter', name:'Inter', sub:'+ JetBrains Mono · neutra y universal', f:"'Inter', sans-serif", m:"'JetBrains Mono', monospace" },
+ { id:'plex', name:'IBM Plex Sans', sub:'+ Plex Mono · técnica, con carácter', f:"'IBM Plex Sans', sans-serif", m:"'IBM Plex Mono', monospace" },
+ { id:'source', name:'Source Sans 3', sub:'+ Source Code Pro · muy legible, académica', f:"'Source Sans 3', sans-serif", m:"'Source Code Pro', monospace" },
+ { id:'manrope', name:'Manrope', sub:'+ Fira Code · moderna, geométrica', f:"'Manrope', sans-serif", m:"'Fira Code', monospace" },
+ { id:'figtree', name:'Figtree', sub:'+ DM Mono · amable y limpia', f:"'Figtree', sans-serif", m:"'DM Mono', monospace" },
+];
+
+let st = { p: 0, f: 0, m: 'light' };
+const $ = (s) => document.querySelector(s);
+
+function render() {
+  const pal = P[st.p], k = st.m === 'light' ? 'l' : 'd', c = { ...pal[k], ...S[k] }, fo = F[st.f];
+  const app = $('#app');
+  Object.entries(c).forEach(([n, v]) => app.style.setProperty('--' + n, v));
+  app.style.setProperty('--font', fo.f); app.style.setProperty('--mono', fo.m);
+  $('#palettes').innerHTML = P.map((p, i) => {
+    const s = p[k];
+    return `<button class="opt" data-p="${i}" aria-pressed="${i === st.p}"><span class="sw">${[s.bg, s.primary, s.accent, s.accentSoft].map(x => `<i style="background:${x}"></i>`).join('')}</span><span><b>${p.name}</b><small>${p.note}</small></span></button>`;
+  }).join('');
+  $('#fonts').innerHTML = F.map((f, i) => `<button class="opt" data-f="${i}" aria-pressed="${i === st.f}"><span style="font:600 26px ${f.f};width:34px;text-align:center">Aa</span><span><b style="font-family:${f.f}">${f.name}</b><small>${f.sub}</small></span></button>`).join('');
+  $('#mode').querySelectorAll('button').forEach(b => b.setAttribute('aria-pressed', b.dataset.m === st.m));
+  $('#css').textContent = `/* ${pal.name} · ${fo.name} · modo ${st.m === 'light' ? 'claro' : 'oscuro'} */\n--font-sans: ${fo.f};\n--font-mono: ${fo.m};\n` + Object.entries(c).map(([n, v]) => `--${n}: ${v};`).join('\n');
+}
+document.addEventListener('click', (e) => {
+  const b = e.target.closest('button'); if (!b) return;
+  if (b.dataset.p) st.p = +b.dataset.p; if (b.dataset.f) st.f = +b.dataset.f; if (b.dataset.m) st.m = b.dataset.m;
+  if (b.id === 'copy') { navigator.clipboard.writeText($('#css').textContent); b.textContent = 'Copiado ✓'; setTimeout(() => b.textContent = 'Copiar selección', 1500); return; }
+  render();
+});
+render();
+</script>
+</body>
+</html>

@@ -1,0 +1,41 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="100%" height="100%">
+  <defs>
+    <style>
+      .bg-app { fill: #f9fafa; }
+      .text-ink { fill: #151b1c; font-family: 'Inter', system-ui, -apple-system, sans-serif; }
+      .text-ink2 { fill: #434d4f; font-family: 'JetBrains Mono', monospace; }
+      .stroke-primary { stroke: #1b2426; stroke-width: 22; stroke-linecap: round; stroke-linejoin: round; }
+      .stroke-accent { stroke: #12a4a0; stroke-width: 22; stroke-linecap: round; stroke-linejoin: round; }
+      .fill-accent { fill: #12a4a0; }
+      .fill-raised { fill: #ffffff; stroke: #dee3e3; stroke-width: 2; }
+      .line-divider { stroke: #dee3e3; stroke-width: 3; stroke-linecap: round; }
+    </style>
+  </defs>
+
+  <!-- ISOTIPO (Símbolo de lógica y código) -->
+  <g transform="translate(40, 136)">
+    <!-- Corchete Izquierdo (Entrada de flujo / Estructura) -->
+    <path class="stroke-primary" fill="none" d="M 72 32 L 28 32 L 28 208 L 72 208" />
+    
+    <!-- Corchete Derecho (Salida de evaluación) -->
+    <path class="stroke-primary" fill="none" d="M 184 32 L 228 32 L 228 208 L 184 208" />
+
+    <!-- Trazo Central Interno: Árbol de decisión / Conjunción lógica -->
+    <path class="stroke-accent" fill="none" d="M 84 164 L 128 80 L 172 164" />
+    
+    <!-- Nodos del algoritmo (Puntos de estado) -->
+    <circle cx="128" cy="80" r="8" class="fill-accent" />
+    <circle cx="84" cy="164" r="7" fill="#1b2426" />
+    <circle cx="172" cy="164" r="7" fill="#1b2426" />
+  </g>
+
+  <!-- LOGOTIPO (Tipografía de alta precisión) -->
+  <!-- "lógica" - Inter Bold (Grafito profundo) -->
+  <text x="300" y="238" class="text-ink" font-size="64" font-weight="700" letter-spacing="-1.8">lógica</text>
+  
+  <!-- "UPTC" - JetBrains Mono SemiBold (Grafito secundario) -->
+  <text x="302" y="294" class="text-ink2" font-size="28" font-weight="600" letter-spacing="4.5">UPTC</text>
+  
+  <!-- Separador fino (Estructura de grid) -->
+  <line x1="302" y1="318" x2="424" y2="318" class="line-divider" />
+</svg>
