@@ -5,6 +5,43 @@ Plan: [PLAN_DE_ACCION.md](PLAN_DE_ACCION.md) · Pendientes humanos: [TAREAS_MANU
 
 ---
 
+## 2026-11-18 — Fase 6: Métricas y documentación técnica ✅ (rama `feat/fase-6`)
+
+**Qué se agregó**
+- **Capturas nítidas para los manuales** (`docs/manual/img/`, 30 PNG): `e2e/manual/manual.spec.ts` con su propia configuración (`e2e/playwright.manual.config.ts`, `cd e2e && npm run manual`; no corre con `npx playwright test` ni en el CI). Escritorio 1440×900 a **escala 2** (imágenes de 2880 px de ancho; las de página completa, hasta 2880×3804), diálogos recortados al elemento (960×520 a 960×1056), tema claro, `animations: 'disabled'`, `reducedMotion`, espera de «sin esqueletos de carga ni peticiones pendientes» y de las fuentes. Móvil 390×844 a **escala 3** (1170×2532, 3 capturas: ingreso, inicio y editor de ejercicio). Las páginas largas se capturan agrandando la ventana al alto del documento (así la barra lateral ocupa toda la imagen). Datos: `e2e/manual/datos.ts` deja al estudiante demo con progreso (módulos 1 a 3 completos, el 4 casi, 6 insignias, un ejercicio «Persistente»), crea 6 alumnos de ejemplo (uno «requiere atención», uno sin actividad) y un módulo borrador «Cadenas de texto» con lección y ejercicio, todo por la API; los alumnos y el módulo se borran al terminar. El flujo fallo → ayuda → acierto se hace en vivo sobre «Par o impar», que queda libre para eso. **Al empezar borra la actividad del estudiante demo** para que sea repetible (documentado en la tarea J).
+- **Manual de usuario** `docs/manual/manual-usuario.md`: introducción, requisitos, acceso (ingresar, crear cuenta, tema, cerrar sesión), guías por rol con pasos numerados y 30 capturas (estudiante: inicio, módulos, lección, ejercicios, retroalimentación, ayuda de IA, progreso, insignias, perfil; docente: panel, contenido, publicar, ordenar, editor con casos de prueba, reportes y CSV; administrador: usuarios, crear, rol, desactivar), preguntas frecuentes y solución de problemas. Los puntos que dependen de una persona están marcados con `> **Pendiente:**` (URL pública, canal de soporte, editor de texto de lecciones que no existe en la interfaz).
+- **Manual de programador** `docs/manual/manual-programador.md` (9.7): visión general, arquitectura con 5 diagramas Mermaid (módulos, despliegue de desarrollo, secuencia del envío con outbox, MER), stack con versiones instaladas, estructura, instalación paso a paso (Docker, `.env`, migrate, seed, dev, modo demostración y API), tablas de variables de entorno (de `config.ts`, `.env.example` y `docker-compose.yml`), módulos con puertos y adaptadores, **referencia de los 38 endpoints** (rutas leídas de los routers con `node scripts/metricas.mjs --rutas`), base de datos y cómo crear una migración, motor de corrección, IA, eventos y n8n, seguridad, pruebas, convenciones, cómo extender (contenido, módulo del backend, lenguaje o tipo de ejercicio, proveedor de IA, pantalla), despliegue y solución de problemas (incluye la letra de unidad en Windows con Vitest).
+- **PDF para el celular**: `scripts/manuales.mjs` (`npm run manuales`) convierte los .md con `marked` (devDependency nueva en el `package.json` raíz), dibuja Mermaid con mermaid 11.4.1 desde jsDelivr (si no hay internet quedan como código) e imprime con Playwright (A4, portada, índice, número de página; las guías por rol y las preguntas frecuentes empiezan en página nueva). Resultado: `manual-usuario.pdf` (32 páginas, 6,2 MB) y `manual-programador.pdf` (25 páginas, 0,6 MB). También acepta un .md extra: `npm run manuales -- ../diagramas.md`.
+- **Métricas** `scripts/metricas.mjs` (`npm run metrics`) → `docs/evidencias/metricas.md`, con el compilador de TypeScript instalado (sin dependencias nuevas): LOC (código, comentarios y blancos) por carpeta de backend, frontend y e2e; complejidad ciclomática por función con promedio, máximo, distribución y top 10; cobertura leída de `coverage-summary.json`; insumos de puntos de función (38 endpoints clasificados en EI/EO/EQ, 11 tablas como ILF y 3 interfaces externas, cada uno con una complejidad y un peso IFPUG **propuestos** y columnas vacías «del equipo»); métricas CK (WMC, WMC por ΣCC, DIT, NOC, CBO, RFC y LCOM aproximados) de 22 clases del backend. Integrado en `scripts/evidencias.ps1` (paso `metricas`, omitible) y en `docs/evidencias/README.md`.
+- **Diagramas** `docs/diagramas.md`: Fig. 1 (módulos), componentes, Fig. 6 (despliegue de desarrollo y de producción objetivo), secuencia del envío, Fig. 2 (MER con todos los atributos) y Fig. 4 (clases: puertos, servicios y adaptadores). Todos se dibujaron sin errores con mermaid 11.4.1.
+
+**Resultados de las métricas** (equipo y fecha dentro de `metricas.md`)
+| Métrica | Backend | Frontend |
+|---|---|---|
+| Archivos `.ts/.tsx` (con pruebas y seed/mocks) | 64 | 79 |
+| Líneas de código (con pruebas, seed/mocks) | 4056 (de ellas 1540 de pruebas) | 5147 (464 de mocks) |
+| Funciones medidas / CC promedio / CC máxima | 376 / 1,82 / 24 (`traducirError`) | 691 / 1,94 / 20 (`LoginPage`) |
+| Funciones con CC > 10 | 4 (ESLint avisa 4) | 11 (ESLint avisa 12) |
+| Cobertura de líneas (reportes de la Fase 5) | 93,83 % | 17,18 % |
+
+Puntos de función sin ajustar con la propuesta: 263 (EI 65, EO 19, EQ 66, ILF 94, EIF 19). CK: WMC medio 4,5, CBO medio 5,0, RFC medio 14,8, LCOM medio 0,5, DIT 0 salvo `AppError` (1); las reglas de negocio de progreso y evaluación son funciones puras y no aparecen como clases.
+
+**Verificado**
+- Se abrieron con la herramienta de imágenes las capturas de inicio, ejercicio fallido con ayuda, ejercicio correcto, progreso, insignias, lección, contenido (con borrador), panel docente, reportes, editor de ejercicio, casos de prueba, modal de nuevo usuario, menú de tema, login con error y la de inicio móvil y la del editor móvil: nítidas, completas y sin estados de carga. Se rehicieron dos veces (barra lateral cortada en páginas largas y un error de selector en la captura de contenido). En los PDF se renderizaron páginas con pymupdf (portada, texto, captura, diagramas): las capturas se ven nítidas a 170 ppp; el diagrama de secuencia queda pequeño por ser ancho (es vectorial: se amplía).
+- `npx tsc --noEmit` de `e2e/` sin errores (ahora incluye `manual/`). No se tocó código de backend ni de frontend, así que sus suites no se volvieron a correr (siguen como en la Fase 5: 152/152 y 56/56).
+
+**Desviaciones y por verificar**
+- La ayuda de IA de las capturas es «Pista del curso» (no hay proveedor configurado); el manual lo explica.
+- Había un módulo de pruebas de fases anteriores en la base de desarrollo («Módulo adaptador 2», código 10, borrador). Borrarlo fue rechazado por el entorno, así que las capturas lo ocultan con una regla en la prueba y las cifras del panel docente (p. ej. «8 de 10 módulos») lo incluyen. Tarea en TAREAS_MANUALES (J).
+- Las definiciones de CBO, RFC y LCOM son aproximaciones por análisis del código fuente; la complejidad ciclomática no coincide al 100 % con la regla `complexity` de ESLint (que cuenta además `?.` y valores por omisión).
+- Los puntos de función son una **propuesta automática**: el equipo debe confirmar complejidad, pesos y factor de ajuste.
+- Los PDF necesitan internet al generarse (Mermaid desde CDN). El manual de programador dice qué hay y qué no (por ejemplo, la columna `ejercicio.lenguaje` existe pero ningún código la usa; ni el soporte de otros lenguajes ni tipos de ejercicio distintos están implementados: solo se describe cómo hacerlos).
+- La interfaz no tiene editor para el texto de las lecciones ni para marcar un caso de prueba como oculto; el manual de usuario lo advierte.
+
+**Para la Fase 7**: el manual de programador (sección 16) y `docs/diagramas.md` describen el despliegue de producción como objetivo; hay que actualizarlos con lo realmente instalado (Nginx, TLS, backups) y completar el `> **Pendiente:**` de la URL pública.
+
+---
+
 ## 2026-11-18 — Fase 5: Pruebas y evidencia (objetivo específico 5) ✅ (rama `feat/fase-5`)
 
 **Qué se agregó**

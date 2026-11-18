@@ -31,8 +31,8 @@ Plan general: [PLAN_DE_ACCION.md](PLAN_DE_ACCION.md).
 - [ ] Corregir el glosario de `plataforma_educativa_uptc.md` (dice Angular) o descartar ese archivo viejo.
 
 ## D. Entregables complementarios
-- [ ] Manual de usuario: tomar pantallazos de cada pantalla y pegarlos en `docs/manual-usuario.md` (el texto lo deja el plan).
-- [ ] Publicar el manual de programador (link en 9.7): GitHub Pages o el propio README del repo.
+- [x] Manual de usuario: redactado con capturas nítidas en `docs/manual/manual-usuario.md` (ver sección J para la revisión humana).
+- [ ] Publicar el manual de programador (link en 9.7): el borrador está en `docs/manual/manual-programador.md` (y su PDF); falta decidir dónde se publica (GitHub Pages, el propio repo en GitHub o el PDF en Drive) y poner el link en el documento.
 - [ ] Video del aplicativo (recorrido estudiante → docente → admin, 3–5 min).
 - [ ] Ponencia / diapositivas.
 - [ ] Artículo del proyecto.
@@ -70,3 +70,14 @@ Plan general: [PLAN_DE_ACCION.md](PLAN_DE_ACCION.md).
 - [ ] Confirmar con el docente el número real de usuarios concurrentes: `perf/carga.js` toma `VUS`, `POOL`, `ENVIOS_POR_MIN` y `DOCENTES` por variable de entorno.
 - [ ] En GitHub Actions: comprobar que el job `e2e` del CI corre en verde la primera vez (usa docker compose en `ubuntu-latest` y ajusta `DOCKER_GID`).
 - [ ] Antes de entregar, correr `npm run evidence` en el equipo que se vaya a citar en el documento (cada reporte lleva fecha y equipo) y pasar las cifras a 10.x y 11.x.
+
+## J. Fase 6 (métricas y manuales)
+- [ ] **Revisar la redacción** de `docs/manual/manual-usuario.md` y `docs/manual/manual-programador.md`: tono, términos y nombres reales del curso. Buscar los avisos `> **Pendiente:**` y resolverlos: URL pública definitiva, canal de soporte (el manual dice «escribe a soporte» porque no hay recuperación automática de contraseña) y detalle del despliegue (Fase 7).
+- [ ] **Probar el manual de usuario con una persona real** (idealmente un estudiante que no conozca la plataforma) siguiendo solo el texto; anotar dónde se pierde.
+- [ ] **Revisar las capturas** de `docs/manual/img/` (30 imágenes, escala 2 y 3, tema claro, con datos de ejemplo). Se regeneran con `cd e2e && npm run manual`; ese comando **modifica los datos demo**: deja al estudiante demo con progreso (borra antes su actividad y su progreso) y crea y luego borra alumnos de ejemplo. No lo corras contra una base con datos reales. Quedó en la base de desarrollo un módulo de pruebas de fases anteriores («Módulo adaptador 2», código 10, con el ejercicio «Ej adaptador v2», en borrador) que no se pudo borrar desde aquí; las capturas lo ocultan, pero conviene borrarlo (`DELETE FROM modulo WHERE codigo = '10'`) porque el panel docente cuenta «8 de 10» módulos por su causa.
+- [ ] **Regenerar los PDF** si cambias los manuales: `npm install` en la raíz y `npm run manuales` (necesita internet para dibujar los diagramas Mermaid). Los PDF están versionados para verlos en el celular; el manual de programador (9.7) y el de usuario son los dos archivos que se entregan.
+- [ ] **Publicar el manual de programador** para el link de 9.7 (ver sección D) y decidir si el manual de usuario va como anexo (PDF) o como enlace.
+- [ ] **Asignar pesos y complejidad de los puntos de función (11.2)**: `docs/evidencias/metricas.md`, sección 4, trae las 38 entradas, salidas y consultas, las 11 tablas y 3 interfaces externas con una **propuesta** de complejidad y de peso (pesos IFPUG estándar). Hay que confirmarla contando tipos de archivo referenciados (FTR) y campos (DET), llenar las columnas «del equipo», elegir el factor de ajuste (14 características) y calcular FP.
+- [ ] **Interpretar las métricas (11.3 y 11.5)**: CK (WMC, DIT, NOC, CBO, RFC, LCOM) y complejidad ciclomática; decidir umbrales y qué hacer con las 4 funciones del backend y las 11 del frontend con CC > 10 (la más alta: `traducirError`, 24). Las definiciones de CBO, RFC y LCOM son aproximaciones calculadas sobre el código; confirmar que sirven para el documento.
+- [ ] **Rehacer las figuras del documento IW** (Fig. 1, 2, 4 y 6) a partir de `docs/diagramas.md` (se pueden exportar en https://mermaid.live) y revisar que coincidan con lo que el documento describe. El diagrama de despliegue de producción es el objetivo de la Fase 7, no algo ya instalado.
+- [ ] Antes de la entrega, correr `npm run evidence` (regenera también `metricas.md`) en el equipo que se vaya a citar.
