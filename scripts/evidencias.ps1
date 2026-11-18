@@ -1,8 +1,9 @@
 ﻿# Regenera TODOS los reportes de docs/evidencias/ con datos reales de la máquina que lo ejecuta:
 #   estaticas.md  (ESLint + tsc + npm audit)      cobertura.md (Vitest, backend y frontend)
+#   metricas.md   (LOC, complejidad, puntos de función, CK)
 #   e2e.md + accesibilidad.md + capturas/ (Playwright + axe)      carga.md (k6 en Docker)
 # Requisitos: Docker Desktop y Node 24. Levanta docker compose si la API no responde.
-# Uso:  powershell -File scripts/evidencias.ps1 [-Omitir carga,e2e,cobertura,estaticas] [-DuracionCarga 3m]
+# Uso:  powershell -File scripts/evidencias.ps1 [-Omitir carga,e2e,cobertura,estaticas,metricas] [-DuracionCarga 3m]
 #       (o `npm run evidence` en la raíz)
 param(
   [string[]]$Omitir = @(),
@@ -37,6 +38,7 @@ docker pull python:3.12-alpine | Out-Null   # imagen del corrector (pruebas del 
 
 Paso 'estaticas' { node scripts/informes.mjs estaticas }
 Paso 'cobertura' { node scripts/informes.mjs cobertura }
+Paso 'metricas' { node scripts/metricas.mjs }   # lee los reportes de cobertura recién generados
 Paso 'e2e' {
   Push-Location e2e
   if (-not (Test-Path node_modules)) { npm install }
