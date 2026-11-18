@@ -8,5 +8,5 @@
     "skipLibCheck": true,
     "types": ["node"]
   },
-  "include": ["*.ts", "tests", "support"]
+  "include": ["*.ts", "tests", "support", "manual"]
 }

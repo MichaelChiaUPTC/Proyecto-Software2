@@ -7,6 +7,7 @@
     "test": "playwright test",
     "test:a11y": "playwright test tests/accesibilidad.spec.ts",
     "test:capturas": "playwright test tests/capturas.spec.ts",
+    "manual": "playwright test -c playwright.manual.config.ts",
     "install:browsers": "playwright install chromium"
   },
   "devDependencies": {
