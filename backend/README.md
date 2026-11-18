@@ -27,7 +27,7 @@ Usuarios demo (contraseña `Demo1234`): `estudiante@uptc.edu.co`, `docente@uptc.
 
 Las pruebas de integración usan la BD `uptc_test` del mismo MySQL (la crean y migran solas con el usuario root; contraseña en `MYSQL_ROOT_PASSWORD`, por defecto `root`).
 
-## Endpoints (Fases 1 a 3)
+## Endpoints (Fases 1 a 4)
 
 | Método | Ruta | Acceso |
 |---|---|---|
@@ -45,6 +45,13 @@ Las pruebas de integración usan la BD `uptc_test` del mismo MySQL (la crean y m
 | GET | `/api/exercises/:id/attempts` | estudiante: `{solved, attempts, history, next}` |
 | POST | `/api/lessons/:id/complete` | estudiante: `{next, newBadges}` |
 | GET | `/api/me/progress`, `/api/me/badges`, `/api/me/activity?limit=`, `/api/me/home`, `/api/me/profile`, `/api/me/modules/:id` | estudiante |
+| GET | `/api/me/modules` (módulos con `pct/status`), `/api/me/exercises` (ejercicios con `solved/attempts`), `/api/me/lessons/:id` (lección + módulo + `prev/next`), `/api/me/exercises/:id` (ejercicio + módulo + lección + `next` + historial) | estudiante |
+| POST | `/api/exercises/:id/ai-hint` | estudiante: `{hint, source: 'ai' \| 'fallback'}` (Fase 3b) |
+| GET | `/api/teacher/dashboard` | docente/admin: resumen del grupo (activos, atención, distribución por módulo, recientes) |
+| GET | `/api/teacher/reports[?group=]` | docente/admin: `{students: StudentRow[]}` (solo estudiantes activos; `group=Sin grupo` para los que no tienen) |
+| GET | `/api/teacher/reports.csv[?group=]` | docente/admin: CSV UTF-8 con BOM, cabeceras en español, valores neutralizados contra inyección de fórmulas |
+
+CORS: `CORS_ORIGIN` (lista separada por comas; por omisión `http://localhost:5173`, el servidor de desarrollo de Vite).
 
 Errores: `{ "error": { "code": "...", "message": "..." } }`.
 

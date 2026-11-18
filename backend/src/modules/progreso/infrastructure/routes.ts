@@ -2,6 +2,7 @@ import { Router } from 'express'
 import type { Pool } from 'mysql2/promise'
 import { z } from 'zod'
 import { config } from '../../../shared/config.js'
+import { MysqlContenidoRepo } from '../../contenidos/infrastructure/mysql-contenido-repo.js'
 import { crearRequireAuth, requireRole } from '../../usuarios/infrastructure/auth-middleware.js'
 import { MysqlUsuarioRepo } from '../../usuarios/infrastructure/mysql-usuario-repo.js'
 import { JwtTokens } from '../../usuarios/infrastructure/seguridad.js'
@@ -13,7 +14,7 @@ const id = z.coerce.number({ error: 'Identificador inválido.' }).int('Identific
 const limite = z.coerce.number({ error: 'limit inválido.' }).int('limit inválido.').min(1, 'limit inválido.').max(50, 'limit máximo: 50.').default(8)
 
 export function progresoRouter(pool: Pool, repo: ProgresoRepo, procesador: ProcesadorEventos): Router {
-  const svc = new ProgresoService(repo, procesador)
+  const svc = new ProgresoService(repo, procesador, new MysqlContenidoRepo(pool))
   const requireAuth = crearRequireAuth(new JwtTokens(config.JWT_SECRET, config.JWT_EXPIRES_IN), new MysqlUsuarioRepo(pool))
   const estudiante = [requireAuth, requireRole('student')]
   const router = Router()
@@ -21,6 +22,10 @@ export function progresoRouter(pool: Pool, repo: ProgresoRepo, procesador: Proce
   router.post('/lessons/:id/complete', ...estudiante, async (req, res) => void res.json(await svc.completarLeccion(req.usuario!.id, id.parse(req.params.id))))
   router.get('/exercises/:id/attempts', ...estudiante, async (req, res) => void res.json(await svc.intentosDeEjercicio(req.usuario!.id, id.parse(req.params.id))))
   router.get('/me/modules/:id', ...estudiante, async (req, res) => void res.json(await svc.rutaDeModulo(req.usuario!.id, id.parse(req.params.id))))
+  router.get('/me/modules', ...estudiante, async (req, res) => void res.json(await svc.modulos(req.usuario!.id)))
+  router.get('/me/exercises', ...estudiante, async (req, res) => void res.json(await svc.ejercicios(req.usuario!.id)))
+  router.get('/me/exercises/:id', ...estudiante, async (req, res) => void res.json(await svc.ejercicio(req.usuario!.id, id.parse(req.params.id))))
+  router.get('/me/lessons/:id', ...estudiante, async (req, res) => void res.json(await svc.leccion(req.usuario!.id, id.parse(req.params.id))))
   router.get('/me/progress', ...estudiante, async (req, res) => void res.json(await svc.progreso(req.usuario!.id)))
   router.get('/me/badges', ...estudiante, async (req, res) => void res.json({ badges: await svc.insignias(req.usuario!.id) }))
   router.get('/me/activity', ...estudiante, async (req, res) => void res.json({ activity: await svc.actividad(req.usuario!.id, limite.parse(req.query.limit)) }))

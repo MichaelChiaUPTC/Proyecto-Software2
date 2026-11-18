@@ -13,6 +13,7 @@ import type { HintProvider } from './modules/pistas-ia/domain/puertos.js'
 import { pistasRouter, proveedorDesdeConfig } from './modules/pistas-ia/infrastructure/routes.js'
 import { ProcesadorEventos } from './modules/progreso/application/procesador-eventos.js'
 import { MysqlProgresoRepo } from './modules/progreso/infrastructure/mysql-progreso-repo.js'
+import { reportesRouter } from './modules/reportes/infrastructure/routes.js'
 import { progresoRouter } from './modules/progreso/infrastructure/routes.js'
 
 export interface AppOpts {
@@ -50,6 +51,7 @@ export function createApp(pool: Pool, opts: AppOpts = {}) {
   app.locals.procesador = procesador
   app.use('/api', evaluacionRouter(pool, { runner, gamificacion: procesador, submitLimit: opts.submitLimit }))
   app.use('/api', progresoRouter(pool, progresoRepo, procesador))
+  app.use('/api', reportesRouter(pool))
   app.use('/api', pistasRouter(pool, opts.hintProvider === undefined ? proveedorDesdeConfig() : opts.hintProvider))
 
   app.use(notFound)

@@ -1,4 +1,6 @@
 import { AppError } from '../../../shared/errors.js'
+import { paraEstudiante } from '../../contenidos/application/contenido-service.js'
+import type { ContenidoRepo } from '../../contenidos/domain/contenido.js'
 import { badgeDefs } from '../domain/insignias.js'
 import {
   activity, badgeViews, buildPath, computeContext, findTarget, moduleStats, nextAfter, overview, stats, type Catalogo,
@@ -16,6 +18,7 @@ export class ProgresoService {
   constructor(
     private readonly repo: ProgresoRepo,
     private readonly procesador: ProcesadorEventos,
+    private readonly contenido: ContenidoRepo,
   ) {}
 
   private actividadDe(s: Snapshot, limit: number) {
@@ -99,6 +102,52 @@ export class ProgresoService {
       solved: Boolean(prog?.solved), attempts: prog?.attempts ?? 0,
       history: p.attempts.filter((a) => a.exerciseId === ejercicioId), // ya viene del más reciente al más antiguo
       next: nextAfter('exercise', ejercicioId, e.moduleId, p, c),
+    }
+  }
+
+  /** Equivalente a `api.catalog.modules`: cada módulo publicado con su porcentaje y estado. */
+  async modulos(usuarioId: number) {
+    const { progreso: p, catalogo: c } = await this.repo.snapshot(usuarioId)
+    return { modules: publicados(c).map((m) => overview(m, p, c)) }
+  }
+
+  /** Equivalente a `api.catalog.exercises`: ejercicios publicados (vista del estudiante) con `solved` e intentos. */
+  async ejercicios(usuarioId: number) {
+    const [{ progreso: p }, modulos, ejercicios] = await Promise.all([
+      this.repo.snapshot(usuarioId), this.contenido.listarModulos(true), this.contenido.listarEjercicios({ soloVisibles: true }),
+    ])
+    const modulo = new Map(modulos.map((m) => [m.id, m]))
+    return {
+      exercises: ejercicios
+        .map((e) => ({ exercise: paraEstudiante(e), module: modulo.get(e.moduleId)!, solved: Boolean(p.exercises[e.id]?.solved), attempts: p.exercises[e.id]?.attempts ?? 0 }))
+        .sort((a, b) => a.module.order - b.module.order || a.exercise.order - b.exercise.order),
+    }
+  }
+
+  /** Equivalente a `api.catalog.lesson`: la lección con su módulo, estado y vecinos en la ruta. */
+  async leccion(usuarioId: number, leccionId: number) {
+    const lesson = await this.contenido.leccionPorId(leccionId, true)
+    if (!lesson) throw noEncontrado('La lección')
+    const [module, { progreso: p, catalogo: c }] = await Promise.all([this.contenido.moduloPorId(lesson.moduleId, true), this.repo.snapshot(usuarioId)])
+    const path = buildPath(lesson.moduleId, p, c)
+    const idx = path.findIndex((i) => i.kind === 'lesson' && i.id === leccionId)
+    return {
+      lesson, module, done: p.completedLessons.includes(leccionId), position: idx + 1, total: path.length,
+      prev: idx > 0 ? path[idx - 1]! : null, next: idx >= 0 && idx < path.length - 1 ? path[idx + 1]! : null,
+    }
+  }
+
+  /** Equivalente a `api.catalog.exercise`: ejercicio (sin solución ni casos ocultos) con módulo, lección, siguiente e intentos. */
+  async ejercicio(usuarioId: number, ejercicioId: number) {
+    const e = await this.contenido.ejercicioPorId(ejercicioId, true)
+    if (!e) throw noEncontrado('El ejercicio')
+    const [module, lesson, { progreso: p, catalogo: c }] = await Promise.all([
+      this.contenido.moduloPorId(e.moduleId, true), this.contenido.leccionPorId(e.lessonId, true), this.repo.snapshot(usuarioId),
+    ])
+    const prog = p.exercises[ejercicioId]
+    return {
+      exercise: paraEstudiante(e), module, lesson, next: nextAfter('exercise', ejercicioId, e.moduleId, p, c),
+      solved: Boolean(prog?.solved), attempts: prog?.attempts ?? 0, history: p.attempts.filter((a) => a.exerciseId === ejercicioId),
     }
   }
 }

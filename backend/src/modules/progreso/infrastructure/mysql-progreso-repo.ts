@@ -1,6 +1,6 @@
 import type { Pool, PoolConnection, ResultSetHeader, RowDataPacket } from 'mysql2/promise'
 import { badgeDefs } from '../domain/insignias.js'
-import { armarProgreso, type Dificultad } from '../domain/progreso.js'
+import { armarProgreso, type Catalogo, type Dificultad } from '../domain/progreso.js'
 import type { ProgresoRepo, Snapshot } from '../domain/puertos.js'
 
 const DIF: Record<string, Dificultad> = { baja: 'basic', media: 'medium', alta: 'advanced' }
@@ -8,15 +8,28 @@ type Db = Pick<Pool, 'query'>
 
 export const TIPOS_PROCESABLES = ['IntentoAprobado', 'LeccionCompletada']
 
-async function cargar(db: Db, usuarioId: number): Promise<Snapshot> {
-  const q = async (sql: string, p: unknown[] = []) => (await db.query<RowDataPacket[]>(sql, p))[0]
-  const [modulos, lecciones, ejercicios, todasL, todasE, hechas, intentos, insignias] = await Promise.all([
+/** Catálogo publicado (módulo, lección y ejercicio visibles). */
+export async function cargarCatalogo(db: Db): Promise<Catalogo> {
+  const q = async (sql: string) => (await db.query<RowDataPacket[]>(sql))[0]
+  const [modulos, lecciones, ejercicios] = await Promise.all([
     q('SELECT id_modulo, codigo, titulo, resumen, orden FROM modulo WHERE publicado = 1 ORDER BY orden'),
     q(`SELECT l.id_leccion, l.id_modulo, l.titulo, l.minutos, l.orden FROM leccion l JOIN modulo m ON m.id_modulo = l.id_modulo
        WHERE l.publicado = 1 AND m.publicado = 1`),
     q(`SELECT e.id_ejercicio, e.id_leccion, l.id_modulo, e.titulo, e.objetivo, e.dificultad, e.orden FROM ejercicio e
        JOIN leccion l ON l.id_leccion = e.id_leccion JOIN modulo m ON m.id_modulo = l.id_modulo
        WHERE e.publicado = 1 AND l.publicado = 1 AND m.publicado = 1`),
+  ])
+  return {
+    modules: modulos.map((m) => ({ id: m.id_modulo, order: m.orden, code: m.codigo, title: m.titulo, summary: m.resumen })),
+    lessons: lecciones.map((l) => ({ id: l.id_leccion, moduleId: l.id_modulo, order: l.orden, title: l.titulo, minutes: l.minutos })),
+    exercises: ejercicios.map((e) => ({ id: e.id_ejercicio, moduleId: e.id_modulo, lessonId: e.id_leccion, order: e.orden, title: e.titulo, goal: e.objetivo, difficulty: DIF[e.dificultad]! })),
+  }
+}
+
+async function cargar(db: Db, usuarioId: number): Promise<Snapshot> {
+  const q = async (sql: string, p: unknown[] = []) => (await db.query<RowDataPacket[]>(sql, p))[0]
+  const [catalogo, todasL, todasE, hechas, intentos, insignias] = await Promise.all([
+    cargarCatalogo(db),
     q('SELECT id_leccion, titulo FROM leccion'),
     q('SELECT id_ejercicio, titulo FROM ejercicio'),
     q('SELECT id_leccion, fecha FROM leccion_completada WHERE id_usuario = ? ORDER BY fecha, id_leccion', [usuarioId]),
@@ -24,11 +37,7 @@ async function cargar(db: Db, usuarioId: number): Promise<Snapshot> {
     q('SELECT i.codigo, ui.fecha FROM usuario_insignia ui JOIN insignia i ON i.id_insignia = ui.id_insignia WHERE ui.id_usuario = ?', [usuarioId]),
   ])
   return {
-    catalogo: {
-      modules: modulos.map((m) => ({ id: m.id_modulo, order: m.orden, code: m.codigo, title: m.titulo, summary: m.resumen })),
-      lessons: lecciones.map((l) => ({ id: l.id_leccion, moduleId: l.id_modulo, order: l.orden, title: l.titulo, minutes: l.minutos })),
-      exercises: ejercicios.map((e) => ({ id: e.id_ejercicio, moduleId: e.id_modulo, lessonId: e.id_leccion, order: e.orden, title: e.titulo, goal: e.objetivo, difficulty: DIF[e.dificultad]! })),
-    },
+    catalogo,
     progreso: armarProgreso(
       intentos.map((i) => ({ id: Number(i.id_intento), ejercicioId: i.id_ejercicio, fecha: i.fecha, resultado: Boolean(i.resultado), pistas: i.pistas_usadas, retro: i.retroalimentacion })),
       hechas.map((l) => ({ id: l.id_leccion, fecha: l.fecha })),
