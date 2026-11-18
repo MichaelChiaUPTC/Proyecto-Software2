@@ -15,7 +15,7 @@ export function LessonList({ items, compact }: { items: PathItem[]; compact?: bo
   return (
     <ol className={cx('path', compact && 'path--compact')}>
       {items.map((it) => (
-        <li key={it.id} className={cx('path__item', `path__item--${it.status}`, it.kind === 'exercise' && 'path__item--exercise')}>
+        <li key={`${it.kind}-${it.id}`} className={cx('path__item', `path__item--${it.status}`, it.kind === 'exercise' && 'path__item--exercise')}>
           <span className="path__node" aria-hidden>
             {it.status === 'done' ? <Check size={12} strokeWidth={3} /> : it.status === 'current' ? <span className="path__dot" /> : null}
           </span>
