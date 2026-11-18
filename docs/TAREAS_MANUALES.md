@@ -10,7 +10,7 @@ Plan general: [PLAN_DE_ACCION.md](PLAN_DE_ACCION.md).
 - [ ] Cuenta SMTP para correos de n8n (Gmail con contraseña de aplicación, o Brevo gratis).
 - [ ] Configurar en Vercel la variable `VITE_API_URL=https://<tu-dominio>/api` y redeploy.
 - [ ] Generar secretos reales (`JWT_SECRET`, contraseña de MySQL) y ponerlos en el `.env` de la VM. **Nunca** subirlos a GitHub.
-- [ ] **Clave de IA (Fase 3b):** entrar a https://aistudio.google.com con tu cuenta de Google → "Get API key" → crear clave (gratis, sin tarjeta). Ponerla en `backend/.env` como `GEMINI_API_KEY=...` y `AI_PROVIDER=gemini`. No pegarla en el chat ni subirla a GitHub. (Alternativa: clave de Anthropic en console.anthropic.com, requiere recargar créditos.)
+- [ ] **Clave de IA (Fase 3b):** entrar a https://aistudio.google.com con tu cuenta de Google → "Get API key" → crear clave (gratis, sin tarjeta). Ponerla en `.env` (raíz, para docker compose) y/o `backend/.env` como `GEMINI_API_KEY=...` y `AI_PROVIDER=gemini` (opcional `GEMINI_MODEL`; verificar el nombre vigente en https://aistudio.google.com/docs/models), y reconstruir la API: `docker compose up -d --build api`. No pegarla en el chat ni subirla a GitHub. (Alternativa: `AI_PROVIDER=claude` + `ANTHROPIC_API_KEY=...` de console.anthropic.com, requiere recargar créditos; modelo `ANTHROPIC_MODEL`, por omisión `claude-haiku-5-5`.)
 - [ ] Dónde guardar backups externos (Google Drive / bucket gratuito) y probar una restauración una vez.
 
 ## B. Validación con personas

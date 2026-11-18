@@ -26,6 +26,13 @@ const schema = z.object({
   RUNNER_PIDS: z.coerce.number().int().positive().default(64),
   RUNNER_MAX_CONCURRENT: z.coerce.number().int().positive().default(4),
   RUNNER_DOCKER_BIN: z.string().default('docker'),
+  // Pistas con IA (Fase 3b)
+  AI_PROVIDER: z.enum(['gemini', 'claude', 'none']).default('none'),
+  AI_TIMEOUT_MS: z.coerce.number().int().positive().default(8000),
+  GEMINI_API_KEY: z.string().optional(),
+  GEMINI_MODEL: z.string().default('gemini-3.6-flash'),
+  ANTHROPIC_API_KEY: z.string().optional(),
+  ANTHROPIC_MODEL: z.string().default('claude-haiku-5-5'),
 })
 
 export const config = schema.parse(process.env)

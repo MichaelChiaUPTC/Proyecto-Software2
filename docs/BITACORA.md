@@ -5,6 +5,35 @@ Plan: [PLAN_DE_ACCION.md](PLAN_DE_ACCION.md) · Pendientes humanos: [TAREAS_MANU
 
 ---
 
+## 2026-11-18 — Fase 3b: Pistas con IA (backend) ✅ (rama `feat/fase-3b`)
+
+**Qué se agregó**
+- Módulo `backend/src/modules/pistas-ia/` (hexagonal). Puerto `HintProvider.hint(contexto) → string`; adaptadores con `fetch` nativo: `GeminiHints` (Google AI Studio, `POST .../v1beta/models/{modelo}:generateContent`, cabecera `x-goog-api-key`, `systemInstruction` + `contents` + `generationConfig`), `ClaudeHints` (Messages API, `x-api-key`, `anthropic-version: 2023-06-01`) y `FakeHintProvider` para pruebas. `AI_PROVIDER=gemini|claude|none` (por omisión `none`); sin clave se comporta como `none` y no se llama a nada.
+- Migración `005_pista_ia.sql`: tabla `pista_ia (id_pista, id_intento UNIQUE, id_usuario, texto, fuente 'ai'|'fallback', fecha)` con borrado en cascada desde `intento`/`usuario`. Sirve de auditoría y para contar límites.
+- Sistema (prompt): tutor de programación para principiantes, en español, orientar sin dar el código de la solución ni la línea corregida, sin bloques de código, máximo 3 frases.
+
+**Endpoint para la Fase 4 (botón "Pedir ayuda a la IA")**
+`POST /api/exercises/:id/ai-hint` — token de estudiante, **sin cuerpo** (se usa el último intento fallido guardado en la BD).
+- 200 `{ "hint": string, "source": "ai" | "fallback" }`. `fallback` = pista fija del ejercicio (las `hints`, en orden según cuántas pistas ha pedido ya el usuario en ese ejercicio; si se agotan, repite la última; si el ejercicio no tiene, mensaje genérico). Se usa cuando no hay proveedor, hay timeout (8 s, `AI_TIMEOUT_MS`), error HTTP, respuesta vacía o con bloque de código.
+- Pedirla otra vez sobre el mismo intento fallido devuelve la misma pista guardada (200, sin llamar a la IA). Un nuevo envío fallido permite una nueva.
+- 422 `SIN_INTENTO_FALLIDO` si el usuario no tiene ningún intento fallido en ese ejercicio.
+- 429 `LIMITE_PISTAS_IA` con 10 pistas de IA (`source: 'ai'`) en el día (las de respaldo no cuentan; el día es el del servidor MySQL).
+- 404 ejercicio inexistente o no publicado; 401/403 sin sesión o rol distinto de estudiante. Errores con la forma `{ error: { code, message } }`.
+
+**Privacidad (8.2.2)**: al modelo solo llegan enunciado, código del intento y del primer caso fallido: entrada, esperado, obtenido y error (entrada/esperado/obtenido recortados a 500 caracteres). Si ese caso es oculto solo se envía "falló un caso oculto" y el tipo/mensaje del error. Nunca se envía la solución (`expectedAnswer`), las reglas, ni nombre, correo o id del usuario. El contexto lo arma el servidor desde la BD; el cliente no puede mandar texto. En los logs solo se escribe el mensaje de error del proveedor.
+
+**Cómo activar**: en `.env` (raíz, lo lee docker compose) o `backend/.env`: `AI_PROVIDER=gemini` y `GEMINI_API_KEY=...` (opcional `GEMINI_MODEL`), o `AI_PROVIDER=claude`, `ANTHROPIC_API_KEY=...`, `ANTHROPIC_MODEL` (por omisión `claude-haiku-5-5`). Después `docker compose up -d --build api`.
+
+**Pruebas**: `test/pistas-ia.test.ts` (12): 401/403/404, 422, límite diario 429, una pista por intento, último intento desde la BD, privacidad (caso oculto, sin solución, sin datos personales), pistas fijas en orden, respaldo por error/vacío/bloque de código; adaptadores con `fetch` simulado (formato de la petición, error HTTP, timeout). No se llama a ninguna API real.
+
+**Desviaciones y por verificar**
+- **Verificar**: modelo Gemini por omisión `gemini-3.6-flash`, tomado del listado de modelos estables de https://aistudio.google.com/docs/models (también figuran `gemini-3.8-flash` y `gemini-3.5-flash-lite`); el formato de la petición `generateContent` se tomó de lo conocido de la API v1beta, no se pudo contrastar en esa página. No se probó con claves reales: al poner la clave, probar una pista y ajustar `GEMINI_MODEL` si responde 404.
+- Las pistas de respaldo también se guardan en `pista_ia` (para que repetir el pedido sobre el mismo intento sea idempotente); no cuentan para el límite diario.
+- Dos peticiones simultáneas sobre el mismo intento pueden llamar dos veces a la IA; solo se guarda una (clave única).
+- `AI_TIMEOUT_MS` (8000) es configurable; el timeout vive en los adaptadores (`AbortSignal.timeout`).
+
+---
+
 ## 2026-11-18 — Fase 3: Ejercicios, corrección, progreso y gamificación (RF-03, RF-04, RF-05, RNF-03, RNF-08) ✅ (rama `feat/fase-3`)
 
 **Qué se agregó**

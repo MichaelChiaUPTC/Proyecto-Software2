@@ -9,6 +9,8 @@ import { contenidosRouter } from './modules/contenidos/infrastructure/routes.js'
 import type { CodeRunner } from './modules/evaluacion/domain/runner.js'
 import { DockerRunner } from './modules/evaluacion/infrastructure/docker-runner.js'
 import { evaluacionRouter } from './modules/evaluacion/infrastructure/routes.js'
+import type { HintProvider } from './modules/pistas-ia/domain/puertos.js'
+import { pistasRouter, proveedorDesdeConfig } from './modules/pistas-ia/infrastructure/routes.js'
 import { ProcesadorEventos } from './modules/progreso/application/procesador-eventos.js'
 import { MysqlProgresoRepo } from './modules/progreso/infrastructure/mysql-progreso-repo.js'
 import { progresoRouter } from './modules/progreso/infrastructure/routes.js'
@@ -18,6 +20,8 @@ export interface AppOpts {
   submitLimit?: number
   /** Motor de corrección; por omisión DockerRunner con la configuración del entorno. */
   runner?: CodeRunner
+  /** Proveedor de pistas; por omisión según AI_PROVIDER (null = sin IA). */
+  hintProvider?: HintProvider | null
 }
 
 export function createApp(pool: Pool, opts: AppOpts = {}) {
@@ -46,6 +50,7 @@ export function createApp(pool: Pool, opts: AppOpts = {}) {
   app.locals.procesador = procesador
   app.use('/api', evaluacionRouter(pool, { runner, gamificacion: procesador, submitLimit: opts.submitLimit }))
   app.use('/api', progresoRouter(pool, progresoRepo, procesador))
+  app.use('/api', pistasRouter(pool, opts.hintProvider === undefined ? proveedorDesdeConfig() : opts.hintProvider))
 
   app.use(notFound)
   app.use(errorHandler)
