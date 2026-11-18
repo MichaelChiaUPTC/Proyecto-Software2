@@ -46,3 +46,11 @@ Plan general: [PLAN_DE_ACCION.md](PLAN_DE_ACCION.md).
 - [ ] Antes de cualquier despliegue: cambiar las contraseñas demo (`Demo1234`) o no ejecutar `npm run seed` en producción; crear el admin real desde la BD o con un seed propio.
 - [ ] Revisar en GitHub (Actions) que el workflow `CI` corre en verde la primera vez que se haga push (usa un service container MySQL y Node 24).
 - [ ] Copiar `.env.example` a `.env` en la raíz y en `backend/` y definir un `JWT_SECRET` propio (no se versionan).
+
+## G. Fase 3 (motor de corrección y gamificación)
+- [ ] En cada máquina que corra la API (tu PC, la VM): `docker pull python:3.12-alpine` (la imagen no se descarga sola al corregir).
+- [ ] En la VM de producción (Linux): poner `DOCKER_GID=$(stat -c %g /var/run/docker.sock)` en el `.env`. Evaluar aislar el motor (ver "Riesgos" en la bitácora de la Fase 3) antes de abrirlo a más usuarios.
+- [ ] Revisar con el docente las **reglas de pista** de los ejercicios: algunas del contenido de ejemplo están al revés (p. ej. "Cuadrado de un número" exige que aparezca `print(`). Por eso el backend todavía no las usa en los mensajes.
+- [ ] Revisar los casos de prueba (visibles/ocultos) de cada ejercicio con el docente; hoy son visibles los que coinciden con un ejemplo del enunciado.
+- [ ] Decidir si un ejercicio que imprime en vez de devolver (`print(20)` en lugar de `return 20`) debe aprobar: hoy aprueba si lo impreso coincide con la salida esperada.
+

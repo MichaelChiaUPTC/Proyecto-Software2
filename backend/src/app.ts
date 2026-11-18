@@ -6,8 +6,21 @@ import { config } from './shared/config.js'
 import { errorHandler, notFound } from './shared/middleware/error-handler.js'
 import { usuariosRouter } from './modules/usuarios/infrastructure/routes.js'
 import { contenidosRouter } from './modules/contenidos/infrastructure/routes.js'
+import type { CodeRunner } from './modules/evaluacion/domain/runner.js'
+import { DockerRunner } from './modules/evaluacion/infrastructure/docker-runner.js'
+import { evaluacionRouter } from './modules/evaluacion/infrastructure/routes.js'
+import { ProcesadorEventos } from './modules/progreso/application/procesador-eventos.js'
+import { MysqlProgresoRepo } from './modules/progreso/infrastructure/mysql-progreso-repo.js'
+import { progresoRouter } from './modules/progreso/infrastructure/routes.js'
 
-export function createApp(pool: Pool, opts: { loginLimit?: number } = {}) {
+export interface AppOpts {
+  loginLimit?: number
+  submitLimit?: number
+  /** Motor de corrección; por omisión DockerRunner con la configuración del entorno. */
+  runner?: CodeRunner
+}
+
+export function createApp(pool: Pool, opts: AppOpts = {}) {
   const app = express()
   app.use(helmet())
   app.use(cors({ origin: config.CORS_ORIGIN.split(',').map((o) => o.trim()) }))
@@ -23,6 +36,16 @@ export function createApp(pool: Pool, opts: { loginLimit?: number } = {}) {
   })
   app.use('/api', usuariosRouter(pool, opts))
   app.use('/api', contenidosRouter(pool))
+
+  const runner = opts.runner ?? new DockerRunner({
+    image: config.RUNNER_IMAGE, timeoutMs: config.RUNNER_TIMEOUT_MS, memory: config.RUNNER_MEMORY, cpus: config.RUNNER_CPUS,
+    pids: config.RUNNER_PIDS, maxConcurrent: config.RUNNER_MAX_CONCURRENT, dockerBin: config.RUNNER_DOCKER_BIN,
+  })
+  const progresoRepo = new MysqlProgresoRepo(pool)
+  const procesador = new ProcesadorEventos(progresoRepo)
+  app.locals.procesador = procesador
+  app.use('/api', evaluacionRouter(pool, { runner, gamificacion: procesador, submitLimit: opts.submitLimit }))
+  app.use('/api', progresoRouter(pool, progresoRepo, procesador))
 
   app.use(notFound)
   app.use(errorHandler)

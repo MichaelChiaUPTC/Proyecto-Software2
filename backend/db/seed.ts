@@ -9,7 +9,7 @@ import mysql from 'mysql2/promise'
 import { exercisesSeed } from '../../frontend/src/mocks/exercises'
 import { lessonsSeed } from '../../frontend/src/mocks/lessons'
 import { modulesSeed } from '../../frontend/src/mocks/modules'
-import { badgeDefs } from '../../frontend/src/utils/badges'
+import { badgeDefs } from '../src/modules/progreso/domain/insignias'
 import { config } from '../src/shared/config'
 import { dbSettings } from '../src/shared/db'
 

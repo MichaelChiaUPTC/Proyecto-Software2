@@ -32,6 +32,15 @@ services:
       DB_NAME: ${DB_NAME:-uptc}
       JWT_SECRET: ${JWT_SECRET:?Define JWT_SECRET en .env}
       CORS_ORIGIN: ${CORS_ORIGIN:-http://localhost:5173}
+      RUNNER_IMAGE: ${RUNNER_IMAGE:-python:3.12-alpine}
+    # RIESGO: acceso al socket de Docker = control del host. Mitigaciones en docs/BITACORA.md (Fase 3).
+    # La imagen del runner debe estar descargada en el host: docker pull python:3.12-alpine
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+    # El usuario node necesita pertenecer al grupo dueño del socket: GID 0 en Docker Desktop; en Linux,
+    # el del grupo docker (`stat -c %g /var/run/docker.sock`).
+    group_add:
+      - "${DOCKER_GID:-0}"
     ports:
       - "${API_PORT:-3000}:3000"
 

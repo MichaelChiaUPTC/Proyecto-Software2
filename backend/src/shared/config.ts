@@ -16,6 +16,16 @@ const schema = z.object({
   JWT_EXPIRES_IN: z.string().default('8h'),
   BCRYPT_COST: z.coerce.number().int().min(4).max(15).default(12),
   LOGIN_RATE_LIMIT_MAX: z.coerce.number().int().positive().default(10),
+  SUBMIT_RATE_LIMIT_MAX: z.coerce.number().int().positive().default(10), // envíos por minuto y usuario
+  OUTBOX_INTERVAL_MS: z.coerce.number().int().positive().default(30_000),
+  // Motor de corrección (DockerRunner)
+  RUNNER_IMAGE: z.string().default('python:3.12-alpine'),
+  RUNNER_TIMEOUT_MS: z.coerce.number().int().positive().default(3000),
+  RUNNER_MEMORY: z.string().default('128m'),
+  RUNNER_CPUS: z.string().default('0.5'),
+  RUNNER_PIDS: z.coerce.number().int().positive().default(64),
+  RUNNER_MAX_CONCURRENT: z.coerce.number().int().positive().default(4),
+  RUNNER_DOCKER_BIN: z.string().default('docker'),
 })
 
 export const config = schema.parse(process.env)

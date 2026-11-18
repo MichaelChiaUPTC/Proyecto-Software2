@@ -197,7 +197,7 @@ const defs: Record<string, Def[]> = {
       statement: 'Escribe tabla(n) que devuelva una lista con los diez primeros múltiplos de n, es decir, n×1, n×2, …, n×10.',
       goal: 'Recorrer un rango y construir una lista de resultados.',
       examples: [{ input: 'tabla(3)', expected: '[3, 6, 9, 12, 15, 18, 21, 24, 27, 30]' }],
-      tests: [{ input: 'tabla(3)', expected: '[3, 6, 9, ..., 30]' }, { input: 'tabla(1)', expected: '[1, 2, 3, ..., 10]' }],
+      tests: [{ input: 'tabla(3)', expected: '[3, 6, 9, 12, 15, 18, 21, 24, 27, 30]' }, { input: 'tabla(1)', expected: '[1, 2, 3, 4, 5, 6, 7, 8, 9, 10]' }],
       hints: ['Empieza con una lista vacía y usa append en cada vuelta.', 'range(1, 11) genera del 1 al 10.'],
       answer: 'def tabla(n):\n    resultado = []\n    for i in range(1, 11):\n        resultado.append(n * i)\n    return resultado',
       rules: [r('\\bfor\\b', 'Usa un ciclo for para generar los diez valores.', 'Ciclos'), r('range\\s*\\(', 'range() te da los números del 1 al 10.', 'La función range'), r('\\*', 'Cada elemento es n multiplicado por el contador.', 'Operadores aritméticos'), r('return', 'Falta devolver la lista.', 'Retorno de valores')],

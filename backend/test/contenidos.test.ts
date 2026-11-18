@@ -1,6 +1,6 @@
 import request from 'supertest'
 import { beforeEach, describe, expect, it } from 'vitest'
-import { app, crearUsuario, limpiarUsuarios, pool, tokenDe } from './helpers.js'
+import { app, crearUsuario, limpiarProgreso, limpiarUsuarios, pool, tokenDe } from './helpers.js'
 
 const auth = (t: string) => ({ Authorization: `Bearer ${t}` })
 const T = '/api/teacher/content'
@@ -24,6 +24,7 @@ async function crearArbol(codigo = 'M1') {
 const publicar = (kind: string, id: number) => request(app).post(`${T}/${kind}/${id}/publish`).set(auth(doc))
 
 beforeEach(async () => {
+  await limpiarProgreso()
   await pool.query('DELETE FROM modulo')
   await limpiarUsuarios()
   await crearUsuario('est@uptc.edu.co', 'student')

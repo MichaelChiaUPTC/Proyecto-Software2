@@ -35,6 +35,8 @@ jobs:
       - run: npm ci
       - run: npm run lint
       - run: npm run typecheck
+      # Las pruebas del DockerRunner usan el Docker del runner (ubuntu-latest lo trae); sin él: SKIP_DOCKER_TESTS=1
+      - run: docker pull python:3.12-alpine
       - run: npm test
       - run: npm run build
 

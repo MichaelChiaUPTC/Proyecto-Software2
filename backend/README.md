@@ -27,7 +27,7 @@ Usuarios demo (contraseña `Demo1234`): `estudiante@uptc.edu.co`, `docente@uptc.
 
 Las pruebas de integración usan la BD `uptc_test` del mismo MySQL (la crean y migran solas con el usuario root; contraseña en `MYSQL_ROOT_PASSWORD`, por defecto `root`).
 
-## Endpoints (Fases 1 y 2)
+## Endpoints (Fases 1 a 3)
 
 | Método | Ruta | Acceso |
 |---|---|---|
@@ -41,5 +41,19 @@ Las pruebas de integración usan la BD `uptc_test` del mismo MySQL (la crean y m
 | GET | `/api/teacher/content` | docente/admin |
 | POST, PUT | `/api/teacher/content/{modules,lessons,exercises}[/:id]` | docente/admin |
 | POST | `/api/teacher/content/:kind/:id/publish`, `.../move` | docente/admin |
+| POST | `/api/exercises/:id/submissions` | estudiante (10 envíos/min por usuario). Body `{code, hintsUsed}` → `SubmitResult` |
+| GET | `/api/exercises/:id/attempts` | estudiante: `{solved, attempts, history, next}` |
+| POST | `/api/lessons/:id/complete` | estudiante: `{next, newBadges}` |
+| GET | `/api/me/progress`, `/api/me/badges`, `/api/me/activity?limit=`, `/api/me/home`, `/api/me/profile`, `/api/me/modules/:id` | estudiante |
 
 Errores: `{ "error": { "code": "...", "message": "..." } }`.
+
+## Motor de corrección (Fase 3)
+
+Cada envío ejecuta el código del estudiante en un contenedor `python:3.12-alpine` efímero (`DockerRunner`): sin red, 128 MB, 0,5 CPU, 64 procesos, sistema de archivos de solo lectura, usuario 65534, sin capacidades y con límite total de 3 s (después se mata el contenedor). El código y los casos viajan por stdin; los resultados vuelven con un delimitador aleatorio por envío.
+
+- Necesita Docker en la máquina que corre la API y la imagen descargada: `docker pull python:3.12-alpine`.
+- En `docker compose` la API monta `/var/run/docker.sock` (ver riesgos en `docs/BITACORA.md`). Variable `DOCKER_GID` en el `.env` de la raíz (0 en Docker Desktop).
+- Configurable por env: `RUNNER_IMAGE`, `RUNNER_TIMEOUT_MS`, `RUNNER_MEMORY`, `RUNNER_CPUS`, `RUNNER_PIDS`, `RUNNER_MAX_CONCURRENT`, `SUBMIT_RATE_LIMIT_MAX`, `OUTBOX_INTERVAL_MS`.
+- Casos de prueba: `entrada` es una expresión Python evaluada tras el código del estudiante; `salida_esperada` es lo que imprime o la `repr` del valor devuelto (se acepta la forma `"texto"` con comillas dobles).
+- Las pruebas del runner real se saltan con `SKIP_DOCKER_TESTS=1` (el resto de pruebas usa `FakeRunner`).
