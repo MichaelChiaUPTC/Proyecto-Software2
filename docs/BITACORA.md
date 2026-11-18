@@ -5,6 +5,47 @@ Plan: [PLAN_DE_ACCION.md](PLAN_DE_ACCION.md) · Pendientes humanos: [TAREAS_MANU
 
 ---
 
+## 2026-11-18 — Fase 4: Reportes y conexión del frontend (RF-06) ✅ (rama `feat/fase-4`)
+
+**Qué se agregó**
+- **Backend, módulo `reportes`** (domain / application / infrastructure). Un solo cálculo, con las reglas de progreso del estudiante (`stats`, `findTarget`), a partir de consultas agregadas en SQL (no se cargan los intentos uno a uno). Solo estudiantes **activos**; un desactivado sale de los reportes.
+  - `GET /api/teacher/dashboard` (docente/admin): `{rows, active, total, attention, published, modulesTotal, lessonsPublished, exercisesPublished, avg, perModule: [{module, students}], recent}` (la forma de `api.teacher.dashboard()`).
+  - `GET /api/teacher/reports[?group=]`: `{students: StudentRow[]}`. `group=Sin grupo` devuelve los de `grupo IS NULL`. `StudentRow` lleva además `attempts` (intentos enviados).
+  - `GET /api/teacher/reports.csv[?group=]`: UTF-8 con BOM, CRLF, todo entre comillas, cabeceras en español (`Estudiante, Correo, Grupo, Progreso (%), Ejercicios resueltos, Total ejercicios, Éxito (%), Última actividad, Módulo actual`); los valores que empiezan por `= + - @` se neutralizan con una comilla simple (inyección de fórmulas). `Content-Disposition: attachment; filename="reporte-avance.csv"`.
+  - Definiciones: `lastActivity` = último intento o lección completada (si no hay, la fecha de registro); `currentModule` = `"05 · Título"` del módulo de la meta actual, o `Curso completado`; requiere atención = 7 días o más sin actividad, o éxito < 40 % **con al menos un intento** (un estudiante nuevo no se marca por tener 0 %).
+- **Backend, huecos de la Fase 3** (todos solo estudiante), para que el frontend no haga N peticiones: `GET /api/me/modules` (módulos con `pct/status`), `GET /api/me/exercises` (ejercicios, vista del estudiante, con `module`, `solved`, `attempts`), `GET /api/me/lessons/:id` (= `api.catalog.lesson`: lección con bloques, módulo, `done`, `position`, `total`, `prev`, `next`) y `GET /api/me/exercises/:id` (= `api.catalog.exercise`: ejercicio sin solución ni casos ocultos, módulo, lección, `next`, `solved`, `attempts`, `history`). `ProgresoService` ahora recibe también el repo de contenidos.
+- **Frontend**: `services/api.ts` pasa a `api.mock.ts` (`mockApi`, sin cambios de comportamiento); `api.http.ts` implementa el mismo tipo `Api` con `fetch`; `api.ts` exporta `api` e `isApiMode` según `VITE_API_URL`. `services/http.ts`: token en `sessionStorage` (con try/catch) junto al usuario, cabecera `Authorization`, errores `{error:{code,message}}` → `ApiError(message)`, 401 o `USUARIO_INACTIVO` → limpia la sesión (`AppLayout` redirige a /login). Ids numéricos → string en el borde (`ids()`), sin tocar páginas. `revisionStore` hace que `useQuery` refresque tras una escritura en modo API.
+- Rol `admin` (tipos, `navByRole`, `mobileNav`, rutas `/admin`, `homeFor`/`roleLabel`) y `pages/admin/AdminUsersPage.tsx` (buscar, filtrar, crear, cambiar rol, desactivar con confirmación / activar; no puede tocar su propia cuenta).
+- `LoginPage`: pestañas «Ingresar / Crear cuenta» solo en modo API (nombre, correo @uptc.edu.co, contraseña ≥ 8, confirmación).
+- `ExerciseFeedback`/`ExercisePage`: tras un intento fallido, en modo API, botón «Pedir ayuda a la IA» → `POST /exercises/:id/ai-hint`; muestra la pista con insignia «Pista de la IA» o «Pista del curso» (respaldo), estado de carga y errores (429 límite diario, 422 sin intento fallido, red).
+- `ReportsPage`: «Exportar CSV» usa `api.teacher.exportCsv(group)`: descarga el CSV del backend, o lo genera en el cliente en modo demo.
+- `Modal`: el foco ya no vuelve al primer campo en cada tecla (el efecto dependía de `onClose`, que cambia en cada render).
+- `ContentPage`/`ExerciseEditorPage`: los errores del servidor (p. ej. publicar sin casos de prueba) se muestran en vez de ignorarse.
+- `frontend/.env.example` (`VITE_API_URL=http://localhost:3000/api`; el puerto real es `API_PORT`, 3000). CORS: ya aceptaba `http://localhost:5173` (`CORS_ORIGIN`); se comprobó el preflight con `Authorization`.
+- **n8n**: servicio `n8n` en `docker-compose.yml` bajo el perfil `automatizacion` (volumen `uptc_n8n_data`, red de compose, `depends_on` MySQL; puerto `N8N_PORT`, 5678), `n8n/insignia-obtenida.json`, `n8n/resumen-semanal.json` y `n8n/README.md`. Pasos manuales en `docs/TAREAS_MANUALES.md` (sección H).
+
+**Cómo correr el frontend contra el backend**: `docker compose up -d --build` (raíz), `cd backend && npm run seed`, `cd frontend && cp .env.example .env.local && npm run dev` (http://localhost:5173). Sin `.env.local` sigue el modo demostración. Detalle en `frontend/README.md`. Cuentas del seed: `estudiante@`, `docente@`, `admin@uptc.edu.co` / `Demo1234`.
+
+**Cómo verificar**
+- Backend: `cd backend && npm test && npm run lint && npm run typecheck && npm run build` (152 pruebas, antes 133; nuevas: 19 en `reportes.test.ts` y `catalogo-estudiante.test.ts`).
+- Frontend: `npm run lint` (0 errores; las advertencias son de la regla `complexity`), `npm run typecheck`, `npm run build` sin y con `VITE_API_URL`.
+- Recorrido real contra la API en Docker (script de Node con `fetch`, no versionado): registro → módulos con `pct/status` → lección → completar → ejercicio fallido → pista (422 sin intento; con intento, respaldo) → acierto (+10 puntos, insignia «Primer paso») → progreso e insignias → docente: dashboard, reporte con la fila del estudiante, CSV con cabeceras → admin desactiva → el estudiante recibe 403 `USUARIO_INACTIVO` en cualquier ruta y no puede iniciar sesión → desaparece del reporte → reactivar.
+- La capa `api.http.ts` completa (auth, catálogo, estudiante, envíos, docente con alta/edición/publicación/orden, admin, 401 que limpia la sesión) se ejecutó contra esa misma API cargándola con el servidor de Vite en Node (sin navegador).
+
+**Desviaciones y por verificar**
+- **No se probó la interfaz en un navegador**: la extensión de Chrome no estaba conectada. Lo verificado de la UI es compilación, lint, tipos y el uso real de `api.http.ts` contra el backend; falta pasar el recorrido a mano (tarea en TAREAS_MANUALES) o con Playwright en la Fase 5.
+- Los workflows de n8n no se importaron en una instancia de n8n (no se descargó la imagen); sí se ejecutaron sus consultas SQL contra el MySQL del proyecto. Los `typeVersion` (`scheduleTrigger 1.2`, `mySql 2.4`, `emailSend 2.1`, `code 2`) son los de n8n 1.x reciente.
+- El CSV exportado respeta solo el filtro de **grupo**; la búsqueda por texto y el filtro de estado únicamente filtran la tabla en pantalla. Separador `,`: Excel en español puede abrirlo en una columna (ver TAREAS_MANUALES).
+- `api.http.ts` completa con valores vacíos lo que la vista del estudiante no trae (`expectedAnswer`, `rules`) y `published: true` en los módulos del progreso (solo hay publicados); hay `as never` en esos bordes.
+- Docente: no se puede cambiar de lección un ejercicio existente (el `PUT` del backend no lo mueve). Un módulo nuevo toma como código su posición (`09`).
+- `lastActivity` de un estudiante sin actividad es su fecha de registro; el registro no asigna `grupo` (queda «Sin grupo») y no hay pantalla para editarlo.
+- `UserMenu`: en modo API se oculta «Restablecer datos de demostración».
+- Se agregó `.env.local` al `.gitignore`.
+
+**Pendientes para la Fase 5**: E2E con Playwright del recorrido completo en los 3 roles (incluye lo no probado en navegador: pestaña «Crear cuenta», botón de IA, descarga del CSV, pantalla de admin); axe en las vistas nuevas (admin, login con registro, retroalimentación con IA); k6 sobre `/teacher/dashboard` y `/me/*` (el dashboard agrega todos los intentos con `GROUP BY` en cada petición: bien para un curso, medir con 150 usuarios); pruebas del frontend con Testing Library para `http.ts` (401, errores, token); probar los workflows en un n8n real con un SMTP de prueba.
+
+---
+
 ## 2026-11-18 — Fase 3b: Pistas con IA (backend) ✅ (rama `feat/fase-3b`)
 
 **Qué se agregó**

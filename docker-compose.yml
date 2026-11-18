@@ -49,5 +49,26 @@ services:
     ports:
       - "${API_PORT:-3000}:3000"
 
+  # Automatizacion de correos (Fase 4). No arranca por defecto: docker compose --profile automatizacion up -d n8n
+  # Editor en http://localhost:5678. Ver n8n/README.md para importar los workflows y crear las credenciales
+  # (MySQL: host mysql, base uptc; SMTP: el del correo que envia).
+  n8n:
+    image: n8nio/n8n:latest
+    profiles: [automatizacion]
+    depends_on:
+      mysql:
+        condition: service_healthy
+    environment:
+      GENERIC_TIMEZONE: America/Bogota
+      TZ: America/Bogota
+      N8N_SECURE_COOKIE: "false" # solo desarrollo local por http; en produccion va detras de HTTPS
+      N8N_DIAGNOSTICS_ENABLED: "false"
+    ports:
+      - "${N8N_PORT:-5678}:5678"
+    volumes:
+      - uptc_n8n_data:/home/node/.n8n
+      - ./n8n:/workflows:ro # para importar: n8n import:workflow --input=/workflows/<archivo>.json
+
 volumes:
   uptc_mysql_data:
+  uptc_n8n_data:

@@ -54,3 +54,10 @@ Plan general: [PLAN_DE_ACCION.md](PLAN_DE_ACCION.md).
 - [ ] Revisar los casos de prueba (visibles/ocultos) de cada ejercicio con el docente; hoy son visibles los que coinciden con un ejemplo del enunciado.
 - [ ] Decidir si un ejercicio que imprime en vez de devolver (`print(20)` en lugar de `return 20`) debe aprobar: hoy aprueba si lo impreso coincide con la salida esperada.
 
+## H. Fase 4 (frontend conectado, reportes y n8n)
+- [ ] Probar el recorrido en un navegador real contra el backend (no se pudo automatizar en esta fase): `docker compose up -d --build`, `cd backend && npm run seed`, `cd frontend && cp .env.example .env.local && npm run dev`. Registrarse, completar una lección, fallar y acertar un ejercicio, entrar como docente (reportes y CSV) y como admin (desactivar al estudiante).
+- [ ] Abrir el CSV exportado en Excel. Si todo aparece en una sola columna (Excel en español usa `;` como separador), usar Datos → Desde texto/CSV, o pedir el cambio a `;`.
+- [ ] n8n: definir `N8N_PORT` si el 5678 está ocupado, levantar `docker compose --profile automatizacion up -d n8n`, crear las credenciales **MySQL UPTC** y **SMTP UPTC**, importar `n8n/insignia-obtenida.json` y `n8n/resumen-semanal.json`, elegir las credenciales en cada nodo, cambiar el remitente, probar con *Execute workflow* y **activar** ambos workflows (detalle en `n8n/README.md`).
+- [ ] Antes de activar `insignia-obtenida` por primera vez: decidir si se marcan como procesados los eventos viejos (si no, se envían todos de una vez).
+- [ ] Vercel: mientras el backend no esté publicado, dejar `VITE_API_URL` sin definir (demo con mocks). Al publicar la API, definirla como `https://<dominio>/api` y redesplegar.
+- [ ] Asignar el campo `grupo` a los estudiantes reales (hoy el registro los deja «Sin grupo» y no hay pantalla para editarlo): el reporte por grupo y el resumen semanal dependen de él.

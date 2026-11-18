@@ -1,0 +1,160 @@
+{
+  "name": "Resumen semanal",
+  "nodes": [
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "cronExpression",
+              "expression": "0 7 * * 1"
+            }
+          ]
+        }
+      },
+      "id": "n2-trigger",
+      "name": "Lunes 7:00",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [
+        0,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "SELECT COALESCE(u.grupo, 'Sin grupo') AS grupo,\n       COUNT(*) AS estudiantes,\n       SUM(COALESCE(a.intentos, 0) > 0) AS activos_semana,\n       CAST(COALESCE(SUM(a.intentos), 0) AS UNSIGNED) AS intentos_semana,\n       CAST(COALESCE(SUM(a.aprobados), 0) AS UNSIGNED) AS aprobados_semana\nFROM usuario u\nLEFT JOIN (\n  SELECT id_usuario, COUNT(*) AS intentos, SUM(resultado) AS aprobados\n  FROM intento WHERE fecha >= NOW() - INTERVAL 7 DAY GROUP BY id_usuario\n) a ON a.id_usuario = u.id_usuario\nWHERE u.rol = 'student' AND u.activo = 1\nGROUP BY COALESCE(u.grupo, 'Sin grupo')\nORDER BY grupo",
+        "options": {}
+      },
+      "id": "n2-resumen",
+      "name": "Resumen por grupo",
+      "type": "n8n-nodes-base.mySql",
+      "typeVersion": 2.4,
+      "position": [
+        240,
+        0
+      ],
+      "alwaysOutputData": true,
+      "credentials": {
+        "mySql": {
+          "id": "MYSQL_UPTC",
+          "name": "MySQL UPTC"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "// Un solo item con el HTML del resumen (una fila por grupo).\nconst esc = (s) => String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');\nconst filas = $input.all().map((i) => i.json);\nconst tabla = filas.length\n  ? '<table border=\"1\" cellpadding=\"6\" cellspacing=\"0\"><tr><th>Grupo</th><th>Estudiantes</th><th>Activos esta semana</th><th>Intentos</th><th>Aprobados</th><th>Éxito</th></tr>' +\n    filas.map((f) => {\n      const exito = Number(f.intentos_semana) ? Math.round((Number(f.aprobados_semana) / Number(f.intentos_semana)) * 100) + ' %' : '—';\n      return `<tr><td>${esc(f.grupo)}</td><td>${f.estudiantes}</td><td>${f.activos_semana}</td><td>${f.intentos_semana}</td><td>${f.aprobados_semana}</td><td>${exito}</td></tr>`;\n    }).join('') + '</table>'\n  : '<p>No hay estudiantes activos registrados.</p>';\nreturn [{ json: { html: '<p>Resumen de actividad de los últimos 7 días:</p>' + tabla + '<p>Detalle por estudiante en la sección Reportes de la plataforma.</p>' } }];"
+      },
+      "id": "n2-armar",
+      "name": "Armar correo",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        480,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "SELECT nombre, correo FROM usuario WHERE rol = 'teacher' AND activo = 1",
+        "options": {}
+      },
+      "id": "n2-docentes",
+      "name": "Docentes",
+      "type": "n8n-nodes-base.mySql",
+      "typeVersion": 2.4,
+      "position": [
+        720,
+        0
+      ],
+      "credentials": {
+        "mySql": {
+          "id": "MYSQL_UPTC",
+          "name": "MySQL UPTC"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "fromEmail": "Lógica UPTC <no-responder@uptc.edu.co>",
+        "toEmail": "={{ $json.correo }}",
+        "subject": "Resumen semanal de tus grupos · Lógica UPTC",
+        "emailFormat": "html",
+        "html": "=<p>Hola {{ $json.nombre }},</p>{{ $('Armar correo').first().json.html }}",
+        "options": {}
+      },
+      "id": "n2-correo",
+      "name": "Enviar al docente",
+      "type": "n8n-nodes-base.emailSend",
+      "typeVersion": 2.1,
+      "position": [
+        960,
+        0
+      ],
+      "credentials": {
+        "smtp": {
+          "id": "SMTP_UPTC",
+          "name": "SMTP UPTC"
+        }
+      }
+    }
+  ],
+  "connections": {
+    "Lunes 7:00": {
+      "main": [
+        [
+          {
+            "node": "Resumen por grupo",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Resumen por grupo": {
+      "main": [
+        [
+          {
+            "node": "Armar correo",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Armar correo": {
+      "main": [
+        [
+          {
+            "node": "Docentes",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Docentes": {
+      "main": [
+        [
+          {
+            "node": "Enviar al docente",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "timezone": "America/Bogota"
+  },
+  "pinData": {},
+  "meta": {
+    "templateCredsSetupCompleted": false
+  }
+}
