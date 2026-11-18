@@ -67,7 +67,7 @@ flowchart LR
 
 ## Fig. 6. Despliegue
 
-Lo que existe hoy es el entorno de desarrollo con `docker compose`. El despliegue en la VM (Nginx con TLS, backups, Vercel apuntando a la API) llega en la Fase 7: la segunda figura es el objetivo, no algo ya instalado.
+La primera figura es el entorno de desarrollo con `docker compose`. La segunda es el despliegue de producción definido en `deploy/` (Fase 7): Caddy con TLS automático, el socket de Docker detrás de un proxy filtrado y backups diarios. Está probado en local; la VM real aún no existe.
 
 ```mermaid
 flowchart TB
@@ -92,14 +92,17 @@ flowchart TB
 ```mermaid
 flowchart TB
   Usuario["Navegador"] -->|"HTTPS"| Vercel["Vercel<br/>frontend estático (VITE_API_URL)"]
-  Usuario -->|"HTTPS /api"| Nginx
-  subgraph VM["VM Ubuntu (Fase 7, pendiente)"]
-    Nginx["Nginx + Let's Encrypt"] --> API["api"]
-    API --> MYSQL[("MySQL")]
-    API --> SOCK["Docker (idealmente en host separado)"]
-    N8N["n8n"] --> MYSQL
-    BK["Backup diario de MySQL"] -.-> MYSQL
+  Usuario -->|"HTTPS /api"| Caddy
+  subgraph VM["VM Ubuntu ARM64 (deploy/docker-compose.prod.yml)"]
+    Caddy["Caddy<br/>:80/:443, TLS Let's Encrypt"] --> API["api<br/>sin puerto publicado"]
+    API --> MYSQL[("MySQL<br/>sin puerto publicado, volumen")]
+    API -->|"DOCKER_HOST=tcp://socket-proxy:2375<br/>(red interna)"| PROXY["socket-proxy<br/>solo CONTAINERS y POST"]
+    PROXY --> SOCK["/var/run/docker.sock"] -->|"docker run --rm"| RUN["contenedor efímero<br/>python:3.12-alpine, sin red"]
+    N8N["n8n (opcional)<br/>solo 127.0.0.1, por túnel SSH"] --> MYSQL
+    BK["backup-mysql.sh (cron 03:00)<br/>rotación 7 días"] -.-> MYSQL
+    DDNS["duckdns.sh (cron)"] -.-> DNS
   end
+  DNS["DuckDNS"] -.-> Caddy
   N8N --> SMTP["SMTP"]
 ```
 

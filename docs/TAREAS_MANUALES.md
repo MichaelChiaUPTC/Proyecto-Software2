@@ -3,15 +3,17 @@
 Lo que no se puede automatizar desde el código. Marca con `[x]` a medida que avances.
 Plan general: [PLAN_DE_ACCION.md](PLAN_DE_ACCION.md).
 
-## A. Infraestructura y cuentas (necesarias para la Fase 7)
-- [ ] Crear cuenta en un proveedor con VM gratuita (Oracle Cloud Always Free recomendado: ARM 4 vCPU / 24 GB). Requiere tarjeta para verificación.
-- [ ] Crear la VM Ubuntu, abrir puertos 80 y 443, instalar Docker (`curl -fsSL https://get.docker.com | sh`).
-- [ ] Conseguir dominio gratuito (DuckDNS o similar) apuntando a la IP de la VM.
-- [ ] Cuenta SMTP para correos de n8n (Gmail con contraseña de aplicación, o Brevo gratis).
-- [ ] Configurar en Vercel la variable `VITE_API_URL=https://<tu-dominio>/api` y redeploy.
-- [ ] Generar secretos reales (`JWT_SECRET`, contraseña de MySQL) y ponerlos en el `.env` de la VM. **Nunca** subirlos a GitHub.
-- [ ] **Clave de IA (Fase 3b):** entrar a https://aistudio.google.com con tu cuenta de Google → "Get API key" → crear clave (gratis, sin tarjeta). Ponerla en `.env` (raíz, para docker compose) y/o `backend/.env` como `GEMINI_API_KEY=...` y `AI_PROVIDER=gemini` (opcional `GEMINI_MODEL`; verificar el nombre vigente en https://aistudio.google.com/docs/models), y reconstruir la API: `docker compose up -d --build api`. No pegarla en el chat ni subirla a GitHub. (Alternativa: `AI_PROVIDER=claude` + `ANTHROPIC_API_KEY=...` de console.anthropic.com, requiere recargar créditos; modelo `ANTHROPIC_MODEL`, por omisión `claude-haiku-5-5`.)
-- [ ] Dónde guardar backups externos (Google Drive / bucket gratuito) y probar una restauración una vez.
+## A. Infraestructura y cuentas (Fase 7)
+Todo lo automatizable ya está en `deploy/`. **Sigue la guía [`deploy/README.md`](../deploy/README.md)**; esto es lo único que solo tú puedes hacer:
+- [ ] Cuenta en Oracle Cloud (Always Free, pide tarjeta) y VM Ubuntu ARM `VM.Standard.A1.Flex` con IP pública reservada; abrir TCP 80 y 443 en la Security List de la VCN.
+- [ ] Cuenta en DuckDNS: crear el subdominio apuntando a la IP de la VM y copiar el token.
+- [ ] En la VM: `git clone`, `bash deploy/instalar-vm.sh`, completar `deploy/.env` (`DOMAIN`, `ACME_EMAIL`, `CORS_ORIGIN`, `DUCKDNS_*`), `bash deploy/desplegar.sh --seed`, y poner `duckdns.sh` y `backup-mysql.sh` en el cron.
+- [ ] Proyecto en Vercel (Root Directory `frontend`) con `VITE_API_URL=https://<dominio>/api`; copiar su URL a `CORS_ORIGIN` y volver a correr `desplegar.sh --sin-pull`.
+- [ ] Cambiar o desactivar los usuarios demo (`Demo1234`) que crea `--seed`; crear el admin real.
+- [ ] Cuenta SMTP (Gmail con contraseña de aplicación, o Brevo) si se usa n8n (sección H).
+- [ ] **Clave de IA (opcional):** https://aistudio.google.com → "Get API key" (gratis) → `AI_PROVIDER=gemini` y `GEMINI_API_KEY=...` en `deploy/.env` (alternativa `AI_PROVIDER=claude` + `ANTHROPIC_API_KEY`), luego `desplegar.sh --sin-pull`. No la pegues en el chat ni la subas a GitHub; verifica el nombre vigente del modelo (`GEMINI_MODEL`).
+- [ ] Dónde guardar backups externos (Drive / bucket gratuito / tu PC) y **probar una restauración** una vez en la VM real.
+- [ ] Verificar de punta a punta (sección 6 de la guía) y repetir la prueba de carga contra la VM (sección I).
 
 ## B. Validación con personas
 - [ ] **Prueba de usabilidad (10.2):** 5 estudiantes de Programación Básica usan la app con el formato de usabilidad del docente; registrar tiempos, errores y SUS.
@@ -43,13 +45,13 @@ Plan general: [PLAN_DE_ACCION.md](PLAN_DE_ACCION.md).
 - [ ] Revisar y aprobar cada PR de fase antes de hacer merge.
 
 ## F. Fase 0–1 (backend y CI)
-- [ ] Antes de cualquier despliegue: cambiar las contraseñas demo (`Demo1234`) o no ejecutar `npm run seed` en producción; crear el admin real desde la BD o con un seed propio.
+- [ ] Antes de cualquier despliegue: `deploy/desplegar.sh` no siembra a menos que se pase `--seed`; si lo usas, cambia o desactiva las contraseñas demo (`Demo1234`) y crea el admin real.
 - [ ] Revisar en GitHub (Actions) que el workflow `CI` corre en verde la primera vez que se haga push (usa un service container MySQL y Node 24).
 - [ ] Copiar `.env.example` a `.env` en la raíz y en `backend/` y definir un `JWT_SECRET` propio (no se versionan).
 
 ## G. Fase 3 (motor de corrección y gamificación)
 - [ ] En cada máquina que corra la API (tu PC, la VM): `docker pull python:3.12-alpine` (la imagen no se descarga sola al corregir).
-- [ ] En la VM de producción (Linux): poner `DOCKER_GID=$(stat -c %g /var/run/docker.sock)` en el `.env`. Evaluar aislar el motor (ver "Riesgos" en la bitácora de la Fase 3) antes de abrirlo a más usuarios.
+- [x] En producción la API ya no monta el socket: usa `socket-proxy` (Fase 7), así que `DOCKER_GID` no se necesita en la VM. Sigue vigente el límite del proxy (no filtra el cuerpo de `create`): decidir si basta o hay que aislar el motor en otra VM (ver bitácora de las Fases 3 y 7).
 - [ ] Revisar con el docente las **reglas de pista** de los ejercicios: algunas del contenido de ejemplo están al revés (p. ej. "Cuadrado de un número" exige que aparezca `print(`). Por eso el backend todavía no las usa en los mensajes.
 - [ ] Revisar los casos de prueba (visibles/ocultos) de cada ejercicio con el docente; hoy son visibles los que coinciden con un ejemplo del enunciado.
 - [ ] Decidir si un ejercicio que imprime en vez de devolver (`print(20)` en lugar de `return 20`) debe aprobar: hoy aprueba si lo impreso coincide con la salida esperada.

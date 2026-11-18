@@ -19,6 +19,8 @@ import { progresoRouter } from './modules/progreso/infrastructure/routes.js'
 export interface AppOpts {
   loginLimit?: number
   submitLimit?: number
+  /** Saltos de proxy de confianza; por omisión config.TRUST_PROXY. */
+  trustProxy?: number
   /** Motor de corrección; por omisión DockerRunner con la configuración del entorno. */
   runner?: CodeRunner
   /** Proveedor de pistas; por omisión según AI_PROVIDER (null = sin IA). */
@@ -27,6 +29,7 @@ export interface AppOpts {
 
 export function createApp(pool: Pool, opts: AppOpts = {}) {
   const app = express()
+  app.set('trust proxy', opts.trustProxy ?? config.TRUST_PROXY)
   app.use(helmet())
   app.use(cors({ origin: config.CORS_ORIGIN.split(',').map((o) => o.trim()) }))
   app.use(express.json({ limit: '100kb' }))

@@ -66,7 +66,7 @@ Regla de dependencia: `domain` no importa nada de `infrastructure`; `application
 
 ### 2.2 Despliegue
 
-Hoy existe el entorno de desarrollo con `docker compose` (la API y MySQL en contenedores; el frontend con `npm run dev` en el equipo). El despliegue en una VM llega en la Fase 7.
+El entorno de desarrollo usa `docker compose` (la API y MySQL en contenedores; el frontend con `npm run dev` en el equipo). El despliegue en una VM está definido en `deploy/` (sección 16).
 
 ```mermaid
 flowchart TB
@@ -629,15 +629,19 @@ Un **tipo de ejercicio** distinto (por ejemplo opción múltiple, sin ejecución
 
 Crea la página en `src/pages/<rol>/`, agrégala con `lazy()` y su `Route` en `App.tsx`, el enlace en `nav.ts`, los datos en `api.mock.ts` y `api.http.ts` (el tipo `Api` te obliga), y una prueba E2E del recorrido y su verificación con axe (`e2e/tests/accesibilidad.spec.ts`).
 
-## 16. Despliegue (resumen)
+## 16. Despliegue
+
+La guía paso a paso para quien crea la VM es [`deploy/README.md`](../../deploy/README.md). Resumen técnico:
 
 - **Imagen de la API:** `backend/Dockerfile` (multi-etapa, Node 24 Alpine, `docker-cli`, usuario `node`). Al arrancar ejecuta `node dist/cli/migrate.js && node dist/index.js`.
-- **Compose:** `docker-compose.yml` define `mysql` (volumen `uptc_mysql_data`, healthcheck), `api` (monta el socket de Docker, `group_add: DOCKER_GID`) y `n8n` (perfil `automatizacion`).
-- **Frontend:** build estático (`npm run build`); en Vercel con `vercel.json` (reescritura a `index.html`) y `VITE_API_URL` como variable de entorno del proyecto (se fija al compilar).
-- **Hoy:** el entorno es de desarrollo. La **Fase 7** agregará `docker-compose.prod.yml` (Nginx con TLS, API, MySQL, n8n), `deploy.sh` y el backup diario de MySQL; crear la VM, el dominio y las cuentas es trabajo manual (ver `docs/TAREAS_MANUALES.md`, sección A).
-- Antes de cualquier despliegue real: cambiar las contraseñas demo o no correr el seed, definir un `JWT_SECRET` propio, no exponer el puerto de MySQL, y resolver el aislamiento del corrector (sección 12).
-
-> **Pendiente:** detalle del despliegue en producción (Fase 7) y la URL pública del manual (9.7 del documento IW).
+- **Desarrollo:** `docker-compose.yml` (`mysql`, `api` con el socket montado y `group_add: DOCKER_GID`, `n8n` en el perfil `automatizacion`).
+- **Producción:** `deploy/docker-compose.prod.yml` (proyecto `uptc-prod`). Servicios: `caddy` (único con puertos 80/443; HTTPS automático con Let's Encrypt, reenvía `/api/*` a la API y responde 404 al resto), `api` (`NODE_ENV=production`, `TRUST_PROXY=1`, sin puerto publicado), `mysql` (sin puerto publicado, volumen `mysql_data`), `socket-proxy` (ver abajo), `n8n` (perfil `automatizacion`, solo en `127.0.0.1`, se usa por túnel SSH) y `seed` (perfil `seed`, solo con `desplegar.sh --seed`). Todos con `restart: unless-stopped`, límite de memoria (caddy 128 MB, api 512 MB, mysql 768 MB, proxy 64 MB, n8n 768 MB) y healthchecks. Redes: `edge` (con salida a internet), `db` y `dockerapi` (internas, sin salida). Las imágenes tienen variante `linux/arm64` (verificado con `docker buildx imagetools inspect`: `python:3.12-alpine`, `mysql:8`, `node:24-alpine`, `caddy:2-alpine`, `tecnativa/docker-socket-proxy`, `n8nio/n8n`).
+- **Socket de Docker:** la API no monta `/var/run/docker.sock`; usa `DOCKER_HOST=tcp://socket-proxy:2375` por una red interna. El proxy (`tecnativa/docker-socket-proxy`) solo habilita `CONTAINERS=1` y `POST=1`: es lo que usan `docker run --rm -i` (`POST /containers/create`, `/attach`, `/start`, `/wait`), `docker kill` y `docker rm -f` (`DELETE`). Se comprobó que `docker info`, `docker images`, `docker pull` y `docker volume ls` desde la API reciben 403. **Límite:** el proxy filtra por ruta, no por el cuerpo de `create`; quien comprometa la API aún podría crear un contenedor privilegiado. Reduce la superficie, no la elimina; para eliminarla hay que mover el corrector a otra VM, usar Docker rootless/gVisor o cambiar a Judge0 tras el puerto `CodeRunner`.
+- **Proxy y límites de uso:** `TRUST_PROXY` (por omisión 0) indica cuántos proxies hay delante; con 1, Express toma la IP real del cliente del `X-Forwarded-For` que agrega Caddy y el límite de intentos de login por IP funciona. Sin eso todos los usuarios compartirían la IP de Caddy.
+- **Scripts** (`deploy/`): `instalar-vm.sh` (Docker, reglas iptables de Oracle, imagen del corrector, `.env` con secretos aleatorios), `desplegar.sh [--seed] [--sin-pull]`, `backup-mysql.sh` + `restaurar-mysql.sh`, `duckdns.sh`.
+- **Frontend:** build estático en Vercel con `vercel.json` (reescritura a `index.html`, cabeceras de seguridad y CSP) y `VITE_API_URL=https://<dominio>/api` como variable del proyecto (se fija al compilar: hay que redesplegar al cambiarla). **Si cambias el script de tema de `frontend/index.html`, recalcula el hash `sha256` de la CSP en `vercel.json`** (`script-src`); el comando está en `deploy/README.md`.
+- **Seguridad:** el seed demo (usuarios con clave `Demo1234`) no corre solo; hay que pedirlo con `--seed` y cambiar o desactivar esas cuentas. `CORS_ORIGIN` es obligatorio en producción y debe ser la URL de Vercel. Helmet, límite de 100 KB al JSON (200 KB en Caddy) y los límites de login y de envíos siguen activos.
+- **Estado:** probado en local (Docker Desktop) con un dominio `http://localhost`; la VM real, el certificado de Let's Encrypt y ARM64 no se pudieron probar todavía.
 
 ## 17. Solución de problemas
 
@@ -650,6 +654,7 @@ Crea la página en `src/pages/<rol>/`, agrégala con `lazy()` y su `Route` en `A
 | Los E2E fallan al iniciar | El puerto 5173 debe estar libre y la API responder en `localhost:3000`; corre `npm run seed` y `docker pull python:3.12-alpine`. |
 | Los envíos responden 503 `EJECUTOR_NO_DISPONIBLE` | Docker no responde o falta la imagen: `docker pull python:3.12-alpine`. Dentro del contenedor de la API, revisa el socket y `DOCKER_GID` (`permission denied` sobre `/var/run/docker.sock`). |
 | Las pruebas del backend no conectan | MySQL no está arriba (`docker compose up -d mysql`) o `MYSQL_ROOT_PASSWORD` no es la del compose. |
+| Los envíos fallan en producción con 503 y `docker` dice 403 o `No such image` | El proxy del socket no permite `pull`: descarga la imagen en el host (`docker pull python:3.12-alpine`). |
 | El navegador bloquea las peticiones (CORS) | Agrega el origen de Vite a `CORS_ORIGIN` y reinicia la API. |
 | El frontend sigue en modo demostración | Falta `frontend/.env.local` con `VITE_API_URL`; reinicia `npm run dev` después de crearlo. |
 | 429 `DEMASIADOS_ENVIOS` / `LIMITE_PISTAS_IA` | Son los límites de la sección 8; esperar un minuto o hasta el día siguiente. |

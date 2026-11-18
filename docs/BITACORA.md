@@ -5,6 +5,33 @@ Plan: [PLAN_DE_ACCION.md](PLAN_DE_ACCION.md) · Pendientes humanos: [TAREAS_MANU
 
 ---
 
+## 2026-11-18 — Fase 7: Despliegue (parte sin cuentas ni servidores) ✅ (rama `feat/fase-7`)
+
+**Qué se agregó** (`deploy/`; la guía para el humano es `deploy/README.md`)
+- `docker-compose.prod.yml` (proyecto `uptc-prod`) + `Caddyfile`. **Caddy en vez de Nginx + certbot** porque pide y renueva el certificado de Let's Encrypt él solo (un contenedor y cero scripts de renovación). Solo Caddy publica puertos (80/443); `/api/*` va a la API, el resto responde 404 (el frontend vive en Vercel). API con `NODE_ENV=production` y sin puerto; MySQL sin puerto y con volumen; `restart: unless-stopped`, `mem_limit` (caddy 128 MB, api 512 MB, mysql 768 MB con buffer pool de 256 MB, proxy 64 MB, n8n 768 MB) y healthchecks (api con `fetch` a `/api/health`, mysql, caddy). Redes: `edge` (con salida), `db` y `dockerapi` internas. n8n en el perfil `automatizacion` publicado solo en `127.0.0.1` (acceso por túnel SSH); servicio `seed` en el perfil `seed`.
+- **Socket de Docker (riesgo de la Fase 3)**: la API ya no monta el socket; usa `DOCKER_HOST=tcp://socket-proxy:2375` (`tecnativa/docker-socket-proxy`, red interna) con solo `CONTAINERS=1` y `POST=1`. Se midió qué llama el DockerRunner (log del proxy): `HEAD /_ping`, `POST /containers/create`, `/attach`, `/start`, `/wait?condition=removed`, `/kill` y `DELETE /containers/<id>`. **No** hace falta `IMAGES`, y dejarlo en 0 impide el `pull`; por eso la imagen del corrector se descarga en el host. **Límite**: el proxy filtra rutas y métodos, no el cuerpo de `create`; quien controle la API aún podría crear un contenedor privilegiado. Alternativas en la guía (otra VM, rootless/gVisor, Judge0).
+- `.env.prod.example` (todas las variables comentadas), `instalar-vm.sh` (Docker, `iptables -I INPUT` para 80/443 + `netfilter-persistent save`, `docker pull`, `.env` con `openssl rand`, idempotente), `desplegar.sh [--seed] [--sin-pull]`, `backup-mysql.sh` (mysqldump `--single-transaction` comprimido, `gzip -t`, rotación 7 días), `restaurar-mysql.sh` (confirmación o `--si`, detiene la API mientras restaura), `duckdns.sh`, `_comun.sh`. `.gitattributes` fuerza LF en los `.sh`.
+- **Backend**: nueva variable `TRUST_PROXY` (por omisión 0; el compose de producción la pone en 1) y `app.set('trust proxy', …)`. Antes **no estaba configurado**: detrás de Caddy todos los usuarios habrían compartido la IP del proxy en el límite de login (10 fallos y todos bloqueados). 2 pruebas nuevas en `auth.test.ts` (con 1 salto cada IP cuenta aparte; con 0 se ignora `X-Forwarded-For`).
+- **Frontend**: `vercel.json` con CSP (`script-src 'self'` + hash sha256 del script de tema de `index.html`, `style-src 'unsafe-inline'` por los `style=` de la app, `connect-src 'self' https:`), `nosniff`, `Referrer-Policy`, `Permissions-Policy`, HSTS y caché inmutable para `/assets`. Si se edita el script inline hay que recalcular el hash (comando en `deploy/README.md`).
+- Documentación: secciones 2.2 y 16 del manual de programador, PDF del manual de programador regenerado (el de usuario no se tocó), Fig. 6 de `docs/diagramas.md`, `TAREAS_MANUALES.md` sección A reducida a lo que solo puede hacer el humano.
+
+**Verificado (local, Docker Desktop)**
+- `bash -n` de los 6 scripts y `koalaman/shellcheck` sin hallazgos. Imágenes con variante `linux/arm64` confirmadas con `docker buildx imagetools inspect`: `python:3.12-alpine`, `mysql:8`, `node:24-alpine`, `caddy:2-alpine`, `tecnativa/docker-socket-proxy`, `n8nio/n8n`.
+- `desplegar.sh --sin-pull --seed` con proyecto `uptc-prod-test`, `DOMAIN=http://localhost`, puertos 8088/8443 (el 80/443 los usa agrolab): build, `up --wait` (todo healthy), migraciones, seed (npm ci dentro de `node:24-alpine`) y health OK. Por Caddy: login del estudiante demo, envío fallido, acierto (`passed:true`, insignias), tiempo agotado (`while True`; el contenedor se mata y no queda ningún `uptc-run-*`). Desde la API, `docker info`, `images`, `pull` y `volume ls` reciben 403. MySQL y API sin puertos en el host. 11 logins fallidos con `X-Forwarded-For` falsos distintos: el 11.º recibe 429 (Caddy sobrescribe la cabecera, el límite ve la IP real). Memoria en reposo: caddy 13 MB, api 33 MB, mysql 225 MB, proxy 29 MB.
+- Backup: 3 usuarios, backup, registrar un 4.º, restaurar: 3 usuarios y health OK; la rotación borró un archivo de 10 días.
+- Frontend: `npm run build`; con un servidor estático que aplica las cabeceras de `vercel.json` y Chromium (Playwright) se cargó el login, se ingresó y se navegó sin errores de consola ni violaciones de CSP.
+- Backend `npm test`: 154 de 154 (152 + 2 nuevas). Al final `docker compose -p uptc-prod-test down -v` (solo ese proyecto; el desarrollo en 3000/3306 y agrolab quedaron intactos).
+
+**No se pudo probar (depende de la VM real)**: el certificado real de Let's Encrypt (solo se probó HTTP plano), `instalar-vm.sh` (necesita Ubuntu con sudo, apt e iptables), las reglas iptables y la Security List de Oracle, ARM64 real (solo se verificaron los manifiestos), cron, DuckDNS (`duckdns.sh` no se ejecutó), n8n (solo `docker compose config`; no se descargó la imagen), Vercel (cabeceras probadas con un servidor local equivalente) y la carga de RNF-03 sobre la VM.
+
+**Desviaciones y por verificar**
+- `desplegar.sh` repite las migraciones aunque la API ya las corre al arrancar (idempotente; deja constancia y falla fuerte).
+- `--seed` crea también los usuarios demo con `Demo1234`: no hay seed «solo contenido». Queda como tarea cambiarlos o desactivarlos.
+- La CSP depende de la forma del `index.html` construido; está documentado.
+- `mysqldump` imprime un aviso por usar la clave en la línea de comandos **dentro** del contenedor; es inofensivo.
+
+---
+
 ## 2026-11-18 — Fase 6: Métricas y documentación técnica ✅ (rama `feat/fase-6`)
 
 **Qué se agregó**

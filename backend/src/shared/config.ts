@@ -6,6 +6,8 @@ if (existsSync('.env')) process.loadEnvFile('.env')
 const schema = z.object({
   NODE_ENV: z.enum(['development', 'test', 'production']).default('development'),
   PORT: z.coerce.number().int().positive().default(3000),
+  // Saltos de proxy de confianza (Caddy = 1) para que req.ip y el rate limit vean la IP real; 0 = sin proxy.
+  TRUST_PROXY: z.coerce.number().int().min(0).default(0),
   CORS_ORIGIN: z.string().default('http://localhost:5173'),
   DB_HOST: z.string().default('127.0.0.1'),
   DB_PORT: z.coerce.number().int().positive().default(3306),

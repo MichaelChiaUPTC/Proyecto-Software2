@@ -133,3 +133,23 @@ describe('rutas desconocidas', () => {
     expect(r.body.error.code).toBe('NO_ENCONTRADO')
   })
 })
+
+describe('trust proxy (límite de intentos de login por IP real)', () => {
+  const fallar = (a: ReturnType<typeof createApp>, ip: string) =>
+    request(a).post('/api/auth/login').set('X-Forwarded-For', ip).send({ email: 'nadie@uptc.edu.co', password: 'x' })
+
+  it('con trustProxy=1 cada IP del proxy cuenta aparte', async () => {
+    const a = createApp(pool, { loginLimit: 2, trustProxy: 1 })
+    await fallar(a, '203.0.113.1')
+    await fallar(a, '203.0.113.1')
+    expect((await fallar(a, '203.0.113.1')).status).toBe(429)
+    expect((await fallar(a, '203.0.113.2')).status).toBe(401)
+  })
+
+  it('sin trustProxy se ignora X-Forwarded-For (no se puede evadir el límite falsificándolo)', async () => {
+    const a = createApp(pool, { loginLimit: 2, trustProxy: 0 })
+    await fallar(a, '203.0.113.1')
+    await fallar(a, '203.0.113.2')
+    expect((await fallar(a, '203.0.113.3')).status).toBe(429)
+  })
+})
