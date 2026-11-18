@@ -211,7 +211,7 @@ const defs: Record<string, Def[]> = {
       tests: [{ input: 'cuadrado(6)', expected: '36' }, { input: 'cuadrado(-3)', expected: '9' }],
       hints: ['La potencia se escribe con ** en Python.'],
       answer: 'def cuadrado(x):\n    return x ** 2',
-      rules: [r('\\bprint\\s*\\(', 'print muestra el valor pero no lo devuelve. Usa return.', 'return frente a print'), r('return', 'Falta devolver el resultado con return.', 'Retorno de valores'), r('\\*\\*\\s*2|\\bx\\s*\\*\\s*x', 'Calcula x multiplicado por sí mismo (x * x o x ** 2).', 'Operadores aritméticos')],
+      rules: [r('^(?![\\s\\S]*\\bprint\\s*\\()', 'print muestra el valor pero no lo devuelve. Usa return.', 'return frente a print'), r('return', 'Falta devolver el resultado con return.', 'Retorno de valores'), r('\\*\\*\\s*2|\\bx\\s*\\*\\s*x', 'Calcula x multiplicado por sí mismo (x * x o x ** 2).', 'Operadores aritméticos')],
       success: 'Una función que devuelve su resultado se puede combinar con otras. Una que solo imprime, no.' },
     { id: 'defecto', lesson: 3, title: 'Saludo con valor por defecto', difficulty: 'medium', fn: 'saludo', params: 'nombre',
       statement: 'Escribe saludo(nombre) para que devuelva "Hola, " seguido del nombre. Si no se entrega un nombre, debe usar "estudiante".',
