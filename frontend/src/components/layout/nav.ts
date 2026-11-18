@@ -1,4 +1,4 @@
-import { Award, BarChart3, BookOpen, FolderTree, House, LayoutDashboard, Table2, TerminalSquare, User, FilePenLine, type LucideIcon } from 'lucide-react'
+import { Award, BarChart3, BookOpen, FolderTree, House, LayoutDashboard, Table2, TerminalSquare, User, Users, FilePenLine, type LucideIcon } from 'lucide-react'
 import type { Role } from '@/types'
 
 export interface NavItem {
@@ -29,6 +29,7 @@ export const navByRole: Record<Role, NavItem[][]> = {
     ],
     [{ to: '/docente/reportes', label: 'Reportes', icon: Table2 }],
   ],
+  admin: [[{ to: '/admin', label: 'Usuarios', icon: Users, end: true }]],
 }
 
 /** Destinos de la barra inferior en móvil (máx. 5). */
@@ -46,4 +47,5 @@ export const mobileNav: Record<Role, NavItem[]> = {
     { to: '/docente/ejercicios', label: 'Ejercicios', icon: FilePenLine },
     { to: '/docente/reportes', label: 'Reportes', icon: Table2 },
   ],
+  admin: [{ to: '/admin', label: 'Usuarios', icon: Users, end: true }],
 }

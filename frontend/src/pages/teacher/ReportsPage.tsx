@@ -9,13 +9,8 @@ import { api } from '@/services/api'
 import type { StudentRow } from '@/types'
 import { daysSince, relativeTime } from '@/utils/format'
 
-const needsAttention = (r: StudentRow) => daysSince(r.lastActivity) >= 7 || r.successRate < 40
-
-function toCsv(rows: StudentRow[]): string {
-  const head = ['Estudiante', 'Correo', 'Grupo', 'Progreso (%)', 'Ejercicios resueltos', 'Total ejercicios', 'Éxito (%)', 'Última actividad']
-  const body = rows.map((r) => [r.name, r.email, r.group, r.progress, r.solved, r.totalExercises, r.successRate, r.lastActivity])
-  return [head, ...body].map((l) => l.map((c) => `"${String(c).replace(/"/g, '""')}"`).join(',')).join('\n')
-}
+// Sin intentos (solo el servidor lo informa) el 0 % de éxito no es una señal de alerta.
+const needsAttention = (r: StudentRow) => daysSince(r.lastActivity) >= 7 || ((r.attempts ?? 1) > 0 && r.successRate < 40)
 
 export default function ReportsPage() {
   useDocumentTitle('Reportes')
@@ -24,6 +19,7 @@ export default function ReportsPage() {
   const [text, setText] = useState('')
   const [group, setGroup] = useState('all')
   const [state, setState] = useState('all')
+  const [exporting, setExporting] = useState(false)
 
   const rows = useMemo(() => {
     const t = text.trim().toLowerCase()
@@ -51,19 +47,26 @@ export default function ReportsPage() {
     { key: 'state', header: 'Estado', render: (r) => (needsAttention(r) ? <Badge tone="err">Requiere atención</Badge> : <Badge tone="ok">Al día</Badge>) },
   ]
 
-  const exportCsv = () => {
-    const blob = new Blob(['﻿' + toCsv(rows)], { type: 'text/csv;charset=utf-8' })
-    const a = document.createElement('a')
-    a.href = URL.createObjectURL(blob)
-    a.download = 'reporte-avance.csv'
-    a.click()
-    URL.revokeObjectURL(a.href)
-    toast.show({ tone: 'success', title: 'Reporte exportado', text: `${rows.length} estudiantes` })
+  // El CSV sale del servidor (o se genera en la demostración) y respeta el filtro de grupo; el texto y el estado solo filtran la tabla.
+  const exportCsv = async () => {
+    setExporting(true)
+    try {
+      const blob = await api.teacher.exportCsv(group === 'all' ? undefined : group)
+      const a = document.createElement('a')
+      a.href = URL.createObjectURL(blob)
+      a.download = 'reporte-avance.csv'
+      a.click()
+      URL.revokeObjectURL(a.href)
+      toast.show({ tone: 'success', title: 'Reporte exportado', text: group === 'all' ? 'Todos los grupos' : group })
+    } catch (e) {
+      toast.show({ tone: 'error', title: 'No se pudo exportar', text: (e as Error).message })
+    }
+    setExporting(false)
   }
 
   return (
     <>
-      <PageHeader title="Reportes de avance" description="Progreso por estudiante y por grupo. Ordena por cualquier columna." actions={<Button variant="secondary" iconLeft={<Download size={16} aria-hidden />} onClick={exportCsv} disabled={!rows.length}>Exportar CSV</Button>} />
+      <PageHeader title="Reportes de avance" description="Progreso por estudiante y por grupo. Ordena por cualquier columna." actions={<Button variant="secondary" iconLeft={<Download size={16} aria-hidden />} onClick={exportCsv} loading={exporting} disabled={!q.data?.length}>Exportar CSV</Button>} />
       <QueryView query={q} rows={4}>
         {(all) => (
           <>

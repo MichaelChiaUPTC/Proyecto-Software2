@@ -32,6 +32,11 @@ export function greeting(): string {
   return 'Buenas noches'
 }
 
+export const roleLabel = { student: 'Estudiante', teacher: 'Docente', admin: 'Administrador' } as const
+
+/** Pantalla de inicio de cada rol. */
+export const homeFor = (role: keyof typeof roleLabel) => (role === 'student' ? '/' : role === 'teacher' ? '/docente' : '/admin')
+
 export const difficultyLabel = { basic: 'Básico', medium: 'Intermedio', advanced: 'Avanzado' } as const
 
 export function cx(...c: (string | false | null | undefined)[]): string {

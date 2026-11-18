@@ -6,8 +6,10 @@ import { IconButton } from '@/components/ui/Button'
 import { useToast } from '@/components/ui/Toast'
 import { useAuth } from '@/hooks/useAuth'
 import { useTheme } from '@/hooks/useTheme'
+import { isApiMode } from '@/services/api'
 import { resetDemoData } from '@/services/stores'
 import type { User } from '@/types'
+import { roleLabel } from '@/utils/format'
 
 /** Bloque de usuario con el menú de configuración: tema, datos de demostración y cierre de sesión. */
 export function UserMenu({ user, variant }: { user: User; variant: 'sidebar' | 'compact' }) {
@@ -22,7 +24,7 @@ export function UserMenu({ user, variant }: { user: User; variant: 'sidebar' | '
     { type: 'item' as const, label: 'Oscuro', icon: <Moon size={16} aria-hidden />, checked: pref === 'dark', onSelect: () => setPref('dark') },
     { type: 'item' as const, label: 'Según el sistema', icon: <Monitor size={16} aria-hidden />, checked: pref === 'system', onSelect: () => setPref('system') },
     { type: 'separator' as const },
-    { type: 'item' as const, label: 'Restablecer datos de demostración', icon: <RotateCcw size={16} aria-hidden />, onSelect: () => { resetDemoData(); toast.show({ tone: 'info', title: 'Datos restablecidos' }) } },
+    ...(isApiMode ? [] : [{ type: 'item' as const, label: 'Restablecer datos de demostración', icon: <RotateCcw size={16} aria-hidden />, onSelect: () => { resetDemoData(); toast.show({ tone: 'info', title: 'Datos restablecidos' }) } }]),
     { type: 'item' as const, label: 'Cerrar sesión', icon: <LogOut size={16} aria-hidden />, danger: true, onSelect: async () => { await logout(); navigate('/login') } },
   ]
 
@@ -39,7 +41,7 @@ export function UserMenu({ user, variant }: { user: User; variant: 'sidebar' | '
       <Avatar name={user.name} />
       <div className="usercard__who">
         <p className="usercard__name">{user.name}</p>
-        <p className="usercard__role">{user.role === 'student' ? 'Estudiante' : 'Docente'}</p>
+        <p className="usercard__role">{roleLabel[user.role]}</p>
       </div>
       <Dropdown label="Configuración" align="start" placement="top" entries={entries} trigger={({ props }) => (
         <IconButton label="Configuración" size="sm" {...props}><Settings size={18} aria-hidden /></IconButton>

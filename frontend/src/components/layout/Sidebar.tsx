@@ -1,6 +1,7 @@
 import { Fragment } from 'react'
 import { NavLink } from 'react-router-dom'
 import type { User } from '@/types'
+import { homeFor } from '@/utils/format'
 import { Brand } from './Logo'
 import { UserMenu } from './UserMenu'
 import { mobileNav, navByRole } from './nav'
@@ -10,7 +11,7 @@ export function Sidebar({ user }: { user: User }) {
   return (
     <aside className="sidebar" aria-label="Barra lateral">
       <div className="sidebar__brand">
-        <NavLink to={user.role === 'student' ? '/' : '/docente'} aria-label="lógica UPTC, ir al inicio"><Brand /></NavLink>
+        <NavLink to={homeFor(user.role)} aria-label="lógica UPTC, ir al inicio"><Brand /></NavLink>
       </div>
       <nav className="sidebar__nav" aria-label="Navegación principal">
         {groups.map((g, gi) => (

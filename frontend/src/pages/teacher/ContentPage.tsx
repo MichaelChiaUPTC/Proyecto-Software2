@@ -16,14 +16,20 @@ type Edit =
 
 function Controls({ kind, id, published, first, last, name, onEdit }: { kind: Kind; id: string; published: boolean; first: boolean; last: boolean; name: string; onEdit?: () => void }) {
   const toast = useToast()
-  const toggle = async () => {
-    await api.teacher.togglePublish(kind, id)
-    toast.show({ tone: 'success', title: published ? 'Despublicado' : 'Publicado', text: name })
+  // Con el servidor las acciones pueden fallar (p. ej. publicar sin casos de prueba): se avisa en vez de ignorarlo.
+  const run = async (fn: () => Promise<unknown>, ok?: { title: string; text: string }) => {
+    try {
+      await fn()
+      if (ok) toast.show({ tone: 'success', ...ok })
+    } catch (e) {
+      toast.show({ tone: 'error', title: 'No se pudo completar la acción', text: (e as Error).message })
+    }
   }
+  const toggle = () => run(() => api.teacher.togglePublish(kind, id), { title: published ? 'Despublicado' : 'Publicado', text: name })
   return (
     <div className="ctl">
-      <Tooltip text="Subir"><IconButton label={`Subir ${name}`} size="sm" disabled={first} onClick={() => api.teacher.move(kind, id, -1)}><ArrowUp size={16} aria-hidden /></IconButton></Tooltip>
-      <Tooltip text="Bajar"><IconButton label={`Bajar ${name}`} size="sm" disabled={last} onClick={() => api.teacher.move(kind, id, 1)}><ArrowDown size={16} aria-hidden /></IconButton></Tooltip>
+      <Tooltip text="Subir"><IconButton label={`Subir ${name}`} size="sm" disabled={first} onClick={() => run(() => api.teacher.move(kind, id, -1))}><ArrowUp size={16} aria-hidden /></IconButton></Tooltip>
+      <Tooltip text="Bajar"><IconButton label={`Bajar ${name}`} size="sm" disabled={last} onClick={() => run(() => api.teacher.move(kind, id, 1))}><ArrowDown size={16} aria-hidden /></IconButton></Tooltip>
       {kind === 'exercise' ? (
         <Tooltip text="Editar"><Link to={`/docente/ejercicios/${id}`} className="icon-btn icon-btn--sm" aria-label={`Editar ${name}`}><Pencil size={16} aria-hidden /></Link></Tooltip>
       ) : (
@@ -50,8 +56,14 @@ export default function ContentPage() {
     if (!edit) return
     if (!edit.title.trim()) { setError('El título es obligatorio.'); return }
     setSaving(true)
-    if (edit.kind === 'module') await api.teacher.saveModule({ id: edit.id, title: edit.title.trim(), summary: edit.summary.trim() })
-    else await api.teacher.saveLesson({ id: edit.id, moduleId: edit.moduleId, title: edit.title.trim(), minutes: Math.max(1, edit.minutes) })
+    try {
+      if (edit.kind === 'module') await api.teacher.saveModule({ id: edit.id, title: edit.title.trim(), summary: edit.summary.trim() })
+      else await api.teacher.saveLesson({ id: edit.id, moduleId: edit.moduleId, title: edit.title.trim(), minutes: Math.max(1, edit.minutes) })
+    } catch (err) {
+      setError((err as Error).message)
+      setSaving(false)
+      return
+    }
     setSaving(false)
     toast.show({ tone: 'success', title: edit.id ? 'Cambios guardados' : 'Creado como borrador', text: edit.title })
     setEdit(null)

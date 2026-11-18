@@ -4,14 +4,14 @@ import { Lightbulb, Play, RotateCcw } from 'lucide-react'
 import { QueryView } from '@/components/layout/QueryView'
 import { Breadcrumb } from '@/components/layout/Breadcrumb'
 import { CodeEditor } from '@/components/exercises/CodeEditor'
-import { ExerciseFeedback } from '@/components/exercises/ExerciseFeedback'
+import { ExerciseFeedback, type AiHintState } from '@/components/exercises/ExerciseFeedback'
 import { TestList } from '@/components/exercises/TestList'
 import { CodeBlock } from '@/components/learning/CodeBlock'
 import { ActivityList } from '@/components/progress/ActivityList'
 import { Badge, Button, Tabs, useToast } from '@/components/ui'
 import { useDocumentTitle } from '@/hooks/useDocumentTitle'
 import { useQuery } from '@/hooks/useQuery'
-import { api } from '@/services/api'
+import { api, isApiMode } from '@/services/api'
 import type { Exercise, SubmitResult, SubmitStatus } from '@/types'
 import { difficultyLabel } from '@/utils/format'
 
@@ -41,6 +41,7 @@ function Workspace({ data }: { data: Data }) {
   const [status, setStatus] = useState<SubmitStatus>('initial')
   const [result, setResult] = useState<SubmitResult | null>(null)
   const [hintsShown, setHintsShown] = useState(0)
+  const [ai, setAi] = useState<AiHintState>({ status: 'idle' })
   const [pane, setPane] = useState<'statement' | 'code'>('statement')
   const [side, setSide] = useState<'statement' | 'history'>('statement')
   const feedbackRef = useRef<HTMLDivElement>(null)
@@ -52,6 +53,7 @@ function Workspace({ data }: { data: Data }) {
   const submit = async () => {
     if (status === 'running') return
     setStatus('running')
+    setAi({ status: 'idle' })
     try {
       const res = await api.exercises.submit(ex.id, code, hintsShown)
       setResult(res)
@@ -64,6 +66,15 @@ function Workspace({ data }: { data: Data }) {
     feedbackRef.current?.scrollIntoView({ block: 'nearest', behavior: 'smooth' })
   }
 
+  const askAi = async () => {
+    setAi({ status: 'loading' })
+    try {
+      setAi({ status: 'ok', hint: await api.exercises.aiHint(ex.id) })
+    } catch (e) {
+      setAi({ status: 'error', message: (e as Error).message })
+    }
+  }
+
   const askHint = () => {
     const n = Math.min(hintsShown + 1, ex.hints.length)
     setHintsShown(n)
@@ -74,6 +85,7 @@ function Workspace({ data }: { data: Data }) {
     setCode(ex.starter)
     setStatus('initial')
     setResult(null)
+    setAi({ status: 'idle' })
     toast.show({ tone: 'info', title: 'Editor restablecido' })
   }
 
@@ -170,6 +182,7 @@ function Workspace({ data }: { data: Data }) {
               status={status}
               result={result}
               hint={hint}
+              ai={isApiMode && status === 'error' ? { state: ai, onAsk: askAi } : undefined}
               lessonLink={lesson ? { to: `/lecciones/${lesson.id}`, title: `Repasar «${lesson.title}»` } : null}
               nextLink={next ? { to: next.to, label: next.kind === 'exercise' ? 'Siguiente ejercicio' : 'Siguiente lección' } : { to: `/modulos/${m.id}`, label: 'Volver al módulo' }}
             />

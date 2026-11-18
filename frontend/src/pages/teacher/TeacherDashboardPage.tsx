@@ -41,7 +41,7 @@ export default function TeacherDashboardPage() {
                   <ul className="attn">
                     {d.attention.map((s) => {
                       const days = daysSince(s.lastActivity)
-                      const reasons = [days >= 7 ? `Sin actividad hace ${days} días` : null, s.successRate < 40 ? `Éxito del ${s.successRate}%` : null].filter(Boolean).join(' · ')
+                      const reasons = [days >= 7 ? `Sin actividad hace ${days} días` : null, (s.attempts ?? 1) > 0 && s.successRate < 40 ? `Éxito del ${s.successRate}%` : null].filter(Boolean).join(' · ')
                       return (
                         <li key={s.id} className="attn__row">
                           <Avatar name={s.name} size="sm" />

@@ -267,6 +267,9 @@
 .feedback--initial .feedback__text, .feedback--running .feedback__text { color: var(--ink-3); font-size: var(--fs-caption); }
 .feedback__concept { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; padding: 6px 10px; border-radius: var(--r-sm); background: color-mix(in oklch, var(--bg-raised) 65%, transparent); border: 1px solid var(--err-line); font-size: var(--fs-caption); }
 .feedback__meta { font-size: var(--fs-caption); color: var(--ink-2); }
+.feedback__ai { display: flex; flex-direction: column; align-items: flex-start; gap: 6px; margin-top: 4px; }
+.feedback__ai-head { display: flex; }
+.feedback__ai-error { font-size: var(--fs-caption); color: var(--err); max-width: 64ch; }
 
 .tests { display: flex; flex-direction: column; gap: 4px; }
 .tests__item { display: flex; align-items: center; gap: var(--s-3); padding: 8px 12px; border: 1px solid var(--line); border-radius: var(--r-md); background: var(--bg-raised); font-size: var(--fs-code); min-width: 0; }
