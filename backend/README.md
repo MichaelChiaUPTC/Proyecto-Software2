@@ -27,7 +27,7 @@ Usuarios demo (contraseña `Demo1234`): `estudiante@uptc.edu.co`, `docente@uptc.
 
 Las pruebas de integración usan la BD `uptc_test` del mismo MySQL (la crean y migran solas con el usuario root; contraseña en `MYSQL_ROOT_PASSWORD`, por defecto `root`).
 
-## Endpoints (Fase 1)
+## Endpoints (Fases 1 y 2)
 
 | Método | Ruta | Acceso |
 |---|---|---|
@@ -37,5 +37,9 @@ Las pruebas de integración usan la BD `uptc_test` del mismo MySQL (la crean y m
 | GET | `/api/auth/me` | autenticado |
 | GET, POST | `/api/admin/users` | admin |
 | PATCH | `/api/admin/users/:id` | admin (`role`, `active`) |
+| GET | `/api/modules`, `/api/modules/:id`, `/api/lessons/:id`, `/api/exercises`, `/api/exercises/:id` | autenticado (solo publicado, sin solución ni casos ocultos) |
+| GET | `/api/teacher/content` | docente/admin |
+| POST, PUT | `/api/teacher/content/{modules,lessons,exercises}[/:id]` | docente/admin |
+| POST | `/api/teacher/content/:kind/:id/publish`, `.../move` | docente/admin |
 
 Errores: `{ "error": { "code": "...", "message": "..." } }`.

@@ -5,6 +5,7 @@ import type { Pool } from 'mysql2/promise'
 import { config } from './shared/config.js'
 import { errorHandler, notFound } from './shared/middleware/error-handler.js'
 import { usuariosRouter } from './modules/usuarios/infrastructure/routes.js'
+import { contenidosRouter } from './modules/contenidos/infrastructure/routes.js'
 
 export function createApp(pool: Pool, opts: { loginLimit?: number } = {}) {
   const app = express()
@@ -21,6 +22,7 @@ export function createApp(pool: Pool, opts: { loginLimit?: number } = {}) {
     }
   })
   app.use('/api', usuariosRouter(pool, opts))
+  app.use('/api', contenidosRouter(pool))
 
   app.use(notFound)
   app.use(errorHandler)
