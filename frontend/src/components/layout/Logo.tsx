@@ -20,7 +20,7 @@ export function Brand({ compact }: { compact?: boolean }) {
       <LogoMark />
       {!compact && (
         <span className="brand__text">
-          <span className="brand__name">lógica</span>
+          <span className="brand__name">lógica</span>{' '}
           <span className="brand__org">UPTC</span>
         </span>
       )}

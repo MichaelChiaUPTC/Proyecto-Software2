@@ -32,8 +32,10 @@ export function ModuleFeature({ data, lessonTitle }: { data: ModuleOverview; les
           </dd>
         </div>
         <div className="mfeature__counts">
-          <div><dt className="t-label">Lecciones</dt><dd className="num">{data.lessons}</dd></div>
-          <div><dt className="t-label">Ejercicios</dt><dd className="num">{data.exercises}</dd></div>
+          <dt className="t-label">Lecciones</dt>
+          <dt className="t-label">Ejercicios</dt>
+          <dd className="num">{data.lessons}</dd>
+          <dd className="num">{data.exercises}</dd>
         </div>
       </dl>
     </section>
