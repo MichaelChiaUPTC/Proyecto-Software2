@@ -61,3 +61,12 @@ Plan general: [PLAN_DE_ACCION.md](PLAN_DE_ACCION.md).
 - [ ] Antes de activar `insignia-obtenida` por primera vez: decidir si se marcan como procesados los eventos viejos (si no, se envían todos de una vez).
 - [ ] Vercel: mientras el backend no esté publicado, dejar `VITE_API_URL` sin definir (demo con mocks). Al publicar la API, definirla como `https://<dominio>/api` y redesplegar.
 - [ ] Asignar el campo `grupo` a los estudiantes reales (hoy el registro los deja «Sin grupo» y no hay pantalla para editarlo): el reporte por grupo y el resumen semanal dependen de él.
+
+## I. Fase 5 (pruebas y evidencia)
+- [ ] Revisar las capturas de `docs/evidencias/capturas/` (44 imágenes, claro y oscuro): que no muestren datos que no quieras en el manual, y elegir cuáles van en `docs/manual-usuario.md`. Se regeneran con `cd e2e && npm run test:capturas`.
+- [ ] Prueba de usabilidad real (10.2) con 5 estudiantes; las pruebas automáticas (E2E y axe) no la sustituyen.
+- [ ] Revisión de accesibilidad a mano: recorrer login, ejercicio y administración solo con teclado y con un lector de pantalla (NVDA o VoiceOver). axe solo detecta una parte de los problemas.
+- [ ] Interpretar `docs/evidencias/carga.md` para 8.1.2/RNF-03: la prueba se hizo en tu PC con todo en la misma máquina. Repetirla contra la VM de producción (Fase 7) con `BASE_URL` apuntando a ella antes de dar el RNF-03 por validado.
+- [ ] Confirmar con el docente el número real de usuarios concurrentes: `perf/carga.js` toma `VUS`, `POOL`, `ENVIOS_POR_MIN` y `DOCENTES` por variable de entorno.
+- [ ] En GitHub Actions: comprobar que el job `e2e` del CI corre en verde la primera vez (usa docker compose en `ubuntu-latest` y ajusta `DOCKER_GID`).
+- [ ] Antes de entregar, correr `npm run evidence` en el equipo que se vaya a citar en el documento (cada reporte lleva fecha y equipo) y pasar las cifras a 10.x y 11.x.

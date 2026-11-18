@@ -5,6 +5,46 @@ Plan: [PLAN_DE_ACCION.md](PLAN_DE_ACCION.md) · Pendientes humanos: [TAREAS_MANU
 
 ---
 
+## 2026-11-18 — Fase 5: Pruebas y evidencia (objetivo específico 5) ✅ (rama `feat/fase-5`)
+
+**Qué se agregó**
+- **Frontend, pruebas unitarias** (Vitest 5 + Testing Library + jsdom; scripts `test` y `test:coverage`; configuración en `vite.config.ts`, con `VITE_API_URL` fijada para ejercitar el modo API): 56 pruebas en 7 archivos. `services/http` (token, cabecera, errores → `ApiError(message)`, 401 y `USUARIO_INACTIVO` limpian la sesión, login con 401 no, red caída, 204, descarga, `restoreSession`), utilidades (`badges`, `format`, `highlight`, `evaluate`), `Modal` (foco atrapado, regresión del foco que saltaba al primer campo, devolución del foco) y `ExerciseFeedback` (botón de IA solo en modo API, carga, pista de IA/de respaldo, error). El CI ahora corre `npm test` del frontend.
+- **E2E** `e2e/` (Playwright, solo Chromium; `webServer` levanta Vite en :5173 con `VITE_API_URL` contra la API de docker): `estudiante.spec.ts` (registro con validaciones y correo repetido, lección, intento fallido, pista con IA —respaldo del curso al no haber proveedor—, acierto, insignia «Primer paso», progreso, cierre de sesión, credenciales incorrectas), `docente.spec.ts` (panel, crear módulo, regla «sin lecciones no se publica», publicar/despublicar y visibilidad para el estudiante, reportes y **descarga del CSV verificada**: BOM, cabeceras, fila del estudiante), `admin.spec.ts` (crear usuario con validación, cambiar rol, desactivar con confirmación: no puede iniciar sesión y la sesión abierta se cierra; reactivar), más `accesibilidad.spec.ts` y `capturas.spec.ts`. Una guarda hace fallar cualquier prueba si la app escribe `console.error` o lanza una excepción. Datos aislados (`e2e-*@uptc.edu.co`, módulos `E2E …`, sufijo por ejecución) y limpieza con `e2e/cleanup.sql` al empezar y al terminar (no hay DELETE de usuarios en la API).
+- **Capturas** (44 PNG, claro y oscuro, 4 recorridos: acceso, estudiante, docente, admin) en `docs/evidencias/capturas/`.
+- **Accesibilidad**: axe-core 4.14.1 (wcag2a/2aa/21a/21aa) sobre 22 vistas/estados × 2 temas → `docs/evidencias/accesibilidad.md`. La primera pasada dio **62 violaciones (12 críticas, 50 serias) en 5 reglas** y se corrigieron todas; el reporte actual da 0. Una prueba final falla si reaparece alguna crítica o seria.
+- **Carga** `perf/carga.js` (k6 en la imagen `grafana/k6`, sin instalar nada) y `perf/ejecutar-carga.ps1` (muestrea `docker stats` de api y mysql, genera `docs/evidencias/carga.md` con `perf/informe.mjs`; el script sale con código ≠ 0 si un umbral no se cumple). Escenarios: 60 VU navegando (`/me/home`, `/me/modules`, `/me/lessons/:id`), 30 envíos/min (llegada constante, repartidos entre 150 estudiantes registrados en `setup()` para respetar el límite de 10/min por usuario) y 5 docentes en `/teacher/dashboard`. Con 150 estudiantes cargados se mide lo que la Fase 4 dejó pendiente (el `GROUP BY` del panel).
+- **Estáticas y cobertura**: `scripts/informes.mjs` (`estaticas`, `cobertura`, `e2e`) genera `estaticas.md`, `cobertura.md` y `e2e.md`. Backend: `@vitest/coverage-v8` y `test:coverage`.
+- `scripts/evidencias.ps1` (y `npm run evidence` en un `package.json` raíz mínimo) regenera todo, levantando docker compose y el seed si hacen falta; `-Omitir` salta pasos. `docs/evidencias/README.md` mapea cada reporte con las secciones 10.1, 10.3, 10.4, 10.5, RNF-03, RNF-07 y 8.1.2.
+- **CI**: el job `frontend` corre las pruebas; nuevo job `e2e` (docker compose + seed + Playwright, sube informe, capturas y accesibilidad como artefacto).
+
+**Resultados reales de esta máquina** (detalle y equipo en `docs/evidencias/*.md`)
+| Suite | Resultado |
+|---|---|
+| Backend (Vitest, MySQL y Docker reales) | 152 de 152; cobertura de líneas 93,83 %, ramas 86,90 % |
+| Frontend (Vitest) | 56 de 56; cobertura de líneas 17,18 % (las páginas solo las cubre el E2E) |
+| E2E Playwright | 27 de 27 (10 de recorridos, 8 de capturas, 9 de axe), 2,9 min |
+| axe | 0 violaciones (62 críticas/serias antes de corregir) |
+| `npm audit --omit=dev` | 0 vulnerabilidades en backend y en frontend |
+| ESLint / `tsc` | 0 errores; 4 avisos `complexity` en backend, 12 en frontend |
+| k6 (3 min, 60 VU + 30 envíos/min + 5 docentes) | p95 envío 965 ms (umbral 3 s); p95 lectura 13,3 ms (umbral 500 ms); `/teacher/dashboard` p95 26,4 ms; errores 0,00 % de 6019 peticiones; API: CPU media 32 %, máx. 349 % (arranque con bcrypt), memoria máx. 196 MiB; MySQL: CPU media 8 %, 536 MiB |
+
+**Bugs reales hallados por las pruebas y corregidos** (commits aparte)
+1. Modo demostración: la regla de «Cuadrado de un número» exigía `print(` y la solución correcta (`return x ** 2`) nunca aprobaba (lo detectó la prueba unitaria de `evaluate`). Ahora comprueba que NO aparezca `print(`.
+2. Claves duplicadas en la ruta de aprendizaje con ids numéricos (lección 1 y ejercicio 1 compartían clave; aviso de React que podía omitir filas): lo detectó la guarda de `console.error` del E2E.
+3. Accesibilidad (RNF-07): `aria-controls` hacia paneles inexistentes en `Tabs`, nombre accesible del logo que no contenía el texto visible, `dl/dt/dd` mal formados en Módulos y Panel docente, y contraste de los comentarios de código en tema claro (4,3:1 → `#5a6a6e`).
+
+**Desviaciones y por verificar**
+- La carga se midió con cliente, API, MySQL y corrector en el mismo PC (Docker Desktop, VM de 12 CPU y 3,5 GiB): no es una medición de producción; repetir en la VM (Fase 7). La CPU máxima de la API es el arranque (150 registros con bcrypt 12), la mediana fue 14 %.
+- El frontend tiene poca cobertura unitaria (17 %) a propósito del alcance pedido (utilidades, `http.ts` y 2 componentes clave); las pantallas y `api.http.ts` están cubiertas por el E2E pero no cuentan en esta métrica. Candidato a mejorar: pruebas de `api.http.ts` con `fetch` simulado.
+- La pista «de la IA» se probó solo con el respaldo (sin clave de proveedor); el E2E acepta ambas fuentes.
+- axe no sustituye la revisión manual con lector de pantalla ni la prueba de usabilidad (ver TAREAS_MANUALES, sección I). Los workflows de n8n siguen sin probarse en un n8n real.
+- El E2E necesita el puerto 5173 libre y la API en `localhost:3000`; limpia con `docker compose exec mysql`.
+- `frontend/tsconfig.tsbuildinfo` sigue versionado y `tsc -b` lo modifica: no se incluyó en los commits.
+
+**Para la Fase 6**: `docs/evidencias/estaticas.md` ya lista las funciones con complejidad > 10 y `cobertura.md` trae la cobertura por carpeta (insumos de `metricas.md`, 11.5); las capturas sirven para `manual-usuario.md`; los datos de carga alimentan 8.1.2/RNF-03.
+
+---
+
 ## 2026-11-18 — Fase 4: Reportes y conexión del frontend (RF-06) ✅ (rama `feat/fase-4`)
 
 **Qué se agregó**

@@ -5,6 +5,7 @@ export default defineConfig({
   test: {
     globalSetup: ['test/global-setup.ts'],
     fileParallelism: false,
+    coverage: { provider: 'v8', include: ['src/**/*.ts'], reporter: ['text-summary', 'json-summary', 'html'] },
     env: {
       NODE_ENV: 'test',
       DB_HOST: process.env.DB_HOST ?? '127.0.0.1',
