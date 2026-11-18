@@ -6,3 +6,5 @@ coverage
 *.tsbuildinfo
 .vercel
 .env.local
+playwright-report
+test-results
