@@ -1,0 +1,136 @@
+{
+  "name": "Insignia obtenida",
+  "nodes": [
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "minutes",
+              "minutesInterval": 1
+            }
+          ]
+        }
+      },
+      "id": "n1-trigger",
+      "name": "Cada minuto",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [
+        0,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "SELECT e.id, u.nombre, u.correo,\n       JSON_UNQUOTE(JSON_EXTRACT(e.payload, '$.nombre')) AS insignia\nFROM evento_outbox e\nJOIN usuario u ON u.id_usuario = CAST(JSON_UNQUOTE(JSON_EXTRACT(e.payload, '$.usuarioId')) AS UNSIGNED)\nWHERE e.tipo = 'InsigniaObtenida' AND e.procesado IS NULL AND u.activo = 1\nORDER BY e.id\nLIMIT 50",
+        "options": {}
+      },
+      "id": "n1-leer",
+      "name": "Insignias pendientes",
+      "type": "n8n-nodes-base.mySql",
+      "typeVersion": 2.4,
+      "position": [
+        240,
+        0
+      ],
+      "credentials": {
+        "mySql": {
+          "id": "MYSQL_UPTC",
+          "name": "MySQL UPTC"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "fromEmail": "Lógica UPTC <no-responder@uptc.edu.co>",
+        "toEmail": "={{ $json.correo }}",
+        "subject": "=¡Ganaste la insignia «{{ $json.insignia }}»!",
+        "emailFormat": "html",
+        "html": "=<p>Hola {{ $json.nombre }},</p><p>Acabas de desbloquear la insignia <strong>{{ $json.insignia }}</strong> en Lógica UPTC. ¡Sigue practicando!</p>",
+        "options": {}
+      },
+      "id": "n1-correo",
+      "name": "Enviar correo al estudiante",
+      "type": "n8n-nodes-base.emailSend",
+      "typeVersion": 2.1,
+      "position": [
+        480,
+        0
+      ],
+      "credentials": {
+        "smtp": {
+          "id": "SMTP_UPTC",
+          "name": "SMTP UPTC"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "UPDATE evento_outbox SET procesado = NOW() WHERE id = ?",
+        "options": {
+          "queryReplacement": "={{ $('Insignias pendientes').item.json.id }}"
+        }
+      },
+      "id": "n1-marcar",
+      "name": "Marcar como procesado",
+      "type": "n8n-nodes-base.mySql",
+      "typeVersion": 2.4,
+      "position": [
+        720,
+        0
+      ],
+      "credentials": {
+        "mySql": {
+          "id": "MYSQL_UPTC",
+          "name": "MySQL UPTC"
+        }
+      }
+    }
+  ],
+  "connections": {
+    "Cada minuto": {
+      "main": [
+        [
+          {
+            "node": "Insignias pendientes",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Insignias pendientes": {
+      "main": [
+        [
+          {
+            "node": "Enviar correo al estudiante",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Enviar correo al estudiante": {
+      "main": [
+        [
+          {
+            "node": "Marcar como procesado",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "pinData": {},
+  "meta": {
+    "templateCredsSetupCompleted": false
+  }
+}

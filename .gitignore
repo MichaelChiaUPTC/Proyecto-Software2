@@ -1,0 +1,11 @@
+node_modules
+dist
+coverage
+.env
+*.log
+*.tsbuildinfo
+.vercel
+.env.local
+playwright-report
+test-results
+deploy/backups/

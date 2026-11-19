@@ -1,0 +1,22 @@
+# Proxy inverso con HTTPS automatico (Let's Encrypt). DOMAIN y ACME_EMAIL vienen del .env.
+# En pruebas locales: DOMAIN=http://localhost (sin TLS, Caddy sirve HTTP plano).
+{
+	email {$ACME_EMAIL}
+}
+
+{$DOMAIN} {
+	encode zstd gzip
+
+	handle /api/* {
+		request_body {
+			max_size 200KB
+		}
+		# Caddy agrega X-Forwarded-For; la API confia en 1 salto (TRUST_PROXY=1) para el rate limit.
+		reverse_proxy api:3000
+	}
+
+	# El frontend vive en Vercel; aqui solo se publica la API.
+	handle {
+		respond "API de la plataforma educativa UPTC. El sitio web esta en Vercel." 404
+	}
+}

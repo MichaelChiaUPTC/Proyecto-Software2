@@ -1,7 +1,15 @@
 import { Link } from 'react-router-dom'
-import { ArrowRight, BookOpen, CheckCircle2, CircleAlert, Lightbulb, Loader2, TerminalSquare } from 'lucide-react'
-import type { SubmitResult, SubmitStatus } from '@/types'
-import { ButtonLink } from '@/components/ui/Button'
+import { ArrowRight, BookOpen, CheckCircle2, CircleAlert, Lightbulb, Loader2, Sparkles, TerminalSquare } from 'lucide-react'
+import type { AiHint, SubmitResult, SubmitStatus } from '@/types'
+import { Badge } from '@/components/ui/Badge'
+import { Button, ButtonLink } from '@/components/ui/Button'
+
+/** Estado de la pista pedida a la IA para el último intento fallido. */
+export type AiHintState =
+  | { status: 'idle' }
+  | { status: 'loading' }
+  | { status: 'ok'; hint: AiHint }
+  | { status: 'error'; message: string }
 
 interface Props {
   status: SubmitStatus
@@ -9,13 +17,15 @@ interface Props {
   hint?: { index: number; total: number; text: string } | null
   lessonLink?: { to: string; title: string } | null
   nextLink?: { to: string; label: string } | null
+  /** Solo en modo API: si se pasa, el intento fallido ofrece «Pedir ayuda a la IA». */
+  ai?: { state: AiHintState; onAsk: () => void }
 }
 
 /**
  * Zona de retroalimentación. Siempre explica qué concepto revisar; nunca se limita a «Incorrecto».
  * Es una región aria-live para que lectores de pantalla anuncien el resultado.
  */
-export function ExerciseFeedback({ status, result, hint, lessonLink, nextLink }: Props) {
+export function ExerciseFeedback({ status, result, hint, lessonLink, nextLink, ai }: Props) {
   return (
     <div className={`feedback feedback--${status}`} role="status" aria-live="polite">
       {status === 'initial' && (
@@ -68,6 +78,7 @@ export function ExerciseFeedback({ status, result, hint, lessonLink, nextLink }:
               </p>
             )}
             <p className="feedback__meta num">{result.testsPassed} de {result.testsTotal} casos de prueba</p>
+            {ai && <AiHelp {...ai} />}
           </div>
         </div>
       )}
@@ -81,6 +92,29 @@ export function ExerciseFeedback({ status, result, hint, lessonLink, nextLink }:
           </div>
         </div>
       )}
+    </div>
+  )
+}
+
+function AiHelp({ state, onAsk }: { state: AiHintState; onAsk: () => void }) {
+  if (state.status === 'ok') {
+    const ai = state.hint.source === 'ai'
+    return (
+      <div className="feedback__ai">
+        <p className="feedback__ai-head">
+          <Badge tone={ai ? 'accent' : 'neutral'} icon={<Sparkles size={13} aria-hidden />}>{ai ? 'Pista de la IA' : 'Pista del curso'}</Badge>
+        </p>
+        <p className="feedback__text">{state.hint.hint}</p>
+        <p className="t-caption">{ai ? 'Generada por una IA: puede equivocarse y no incluye la solución.' : 'La IA no estuvo disponible; esta pista viene del curso.'}</p>
+      </div>
+    )
+  }
+  return (
+    <div className="feedback__ai">
+      <Button size="sm" variant="secondary" iconLeft={<Sparkles size={15} aria-hidden />} loading={state.status === 'loading'} onClick={onAsk}>
+        {state.status === 'loading' ? 'Pensando…' : 'Pedir ayuda a la IA'}
+      </Button>
+      {state.status === 'error' && <p className="feedback__ai-error" role="alert">{state.message}</p>}
     </div>
   )
 }

@@ -1,0 +1,160 @@
+# Produccion (VM Ubuntu ARM64/AMD64). Se usa con deploy/desplegar.sh o a mano desde esta carpeta:
+#   docker compose --env-file .env -f docker-compose.prod.yml up -d --build
+# Redes: `edge` (con salida a internet: Caddy, API, n8n), `db` y `dockerapi` (internas, sin salida).
+name: uptc-prod
+
+services:
+  caddy:
+    image: caddy:2-alpine
+    restart: unless-stopped
+    depends_on:
+      api:
+        condition: service_healthy
+    environment:
+      DOMAIN: ${DOMAIN:?Define DOMAIN en .env}
+      ACME_EMAIL: ${ACME_EMAIL:?Define ACME_EMAIL en .env}
+    ports:
+      - "${HTTP_PORT:-80}:80"
+      - "${HTTPS_PORT:-443}:443"
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data # certificados: no borrar (Let's Encrypt limita los emitidos por dominio)
+      - caddy_config:/config
+    networks: [edge]
+    mem_limit: 128m
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q --spider http://127.0.0.1:2019/config/ || exit 1"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+
+  api:
+    build: ../backend
+    restart: unless-stopped
+    depends_on:
+      mysql:
+        condition: service_healthy
+      socket-proxy:
+        condition: service_started
+    environment:
+      NODE_ENV: production
+      PORT: 3000
+      TRUST_PROXY: 1
+      DB_HOST: mysql
+      DB_PORT: 3306
+      DB_USER: ${DB_USER:-uptc}
+      DB_PASSWORD: ${DB_PASSWORD:?Define DB_PASSWORD en .env}
+      DB_NAME: ${DB_NAME:-uptc}
+      JWT_SECRET: ${JWT_SECRET:?Define JWT_SECRET en .env}
+      CORS_ORIGIN: ${CORS_ORIGIN:?Define CORS_ORIGIN en .env}
+      LOGIN_RATE_LIMIT_MAX: ${LOGIN_RATE_LIMIT_MAX:-10}
+      SUBMIT_RATE_LIMIT_MAX: ${SUBMIT_RATE_LIMIT_MAX:-10}
+      RUNNER_IMAGE: ${RUNNER_IMAGE:-python:3.12-alpine}
+      RUNNER_MAX_CONCURRENT: ${RUNNER_MAX_CONCURRENT:-4}
+      # El CLI docker de la imagen habla con el proxy filtrado, nunca con el socket real.
+      DOCKER_HOST: tcp://socket-proxy:2375
+      AI_PROVIDER: ${AI_PROVIDER:-none}
+      GEMINI_API_KEY: ${GEMINI_API_KEY:-}
+      GEMINI_MODEL: ${GEMINI_MODEL:-gemini-3.6-flash}
+      ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:-}
+      ANTHROPIC_MODEL: ${ANTHROPIC_MODEL:-claude-haiku-5-5}
+    networks: [edge, db, dockerapi]
+    mem_limit: 512m
+    healthcheck:
+      test: ["CMD", "node", "-e", "fetch('http://127.0.0.1:3000/api/health').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+
+  mysql:
+    image: mysql:8
+    restart: unless-stopped
+    environment:
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:?Define MYSQL_ROOT_PASSWORD en .env}
+      MYSQL_DATABASE: ${DB_NAME:-uptc}
+      MYSQL_USER: ${DB_USER:-uptc}
+      MYSQL_PASSWORD: ${DB_PASSWORD:?Define DB_PASSWORD en .env}
+    # Sin puertos publicados: solo la API (y n8n) la alcanzan por la red `db`.
+    command: ["--innodb-buffer-pool-size=256M", "--max-connections=100", "--performance-schema=OFF"]
+    volumes:
+      - mysql_data:/var/lib/mysql
+    networks: [db]
+    mem_limit: 768m
+    healthcheck:
+      test: ["CMD-SHELL", "mysqladmin ping -h 127.0.0.1 -uroot -p$$MYSQL_ROOT_PASSWORD --silent"]
+      interval: 10s
+      timeout: 5s
+      retries: 20
+      start_period: 30s
+
+  # Unico servicio que toca /var/run/docker.sock. Deja pasar solo lo que usa `docker run/kill/rm` (ver deploy/README.md).
+  socket-proxy:
+    image: tecnativa/docker-socket-proxy:latest
+    restart: unless-stopped
+    environment:
+      CONTAINERS: 1 # /containers/*: create, start, attach, wait, kill, delete
+      POST: 1 # sin esto solo se permiten GET
+      # IMAGES queda en 0 a proposito: `docker run` no lo necesita si la imagen ya esta descargada, y asi nadie puede hacer pull.
+      # Todo lo demas tambien en 0 (por omision): EXEC, VOLUMES, NETWORKS, SERVICES, SWARM, SECRETS, BUILD, COMMIT, AUTH, INFO, ...
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+    networks: [dockerapi]
+    mem_limit: 64m
+
+  # Automatizacion de correos (opcional): docker compose --env-file .env -f docker-compose.prod.yml --profile automatizacion up -d n8n
+  # Solo escucha en 127.0.0.1 de la VM: se usa por tunel SSH (ssh -L 5678:localhost:5678 ubuntu@<ip>).
+  n8n:
+    image: n8nio/n8n:latest
+    profiles: [automatizacion]
+    restart: unless-stopped
+    depends_on:
+      mysql:
+        condition: service_healthy
+    environment:
+      GENERIC_TIMEZONE: America/Bogota
+      TZ: America/Bogota
+      N8N_DIAGNOSTICS_ENABLED: "false"
+      N8N_SECURE_COOKIE: "false" # el acceso es http://localhost por tunel SSH, no HTTPS
+    ports:
+      - "127.0.0.1:${N8N_PORT:-5678}:5678"
+    volumes:
+      - n8n_data:/home/node/.n8n
+      - ../n8n:/workflows:ro
+    networks: [edge, db]
+    mem_limit: 768m
+
+  # Siembra de contenido inicial (OPCIONAL, solo con `desplegar.sh --seed`). Crea tambien usuarios demo con clave Demo1234.
+  seed:
+    image: node:24-alpine
+    profiles: [seed]
+    depends_on:
+      mysql:
+        condition: service_healthy
+    environment:
+      DB_HOST: mysql
+      DB_USER: ${DB_USER:-uptc}
+      DB_PASSWORD: ${DB_PASSWORD:?Define DB_PASSWORD en .env}
+      DB_NAME: ${DB_NAME:-uptc}
+      JWT_SECRET: ${JWT_SECRET:?Define JWT_SECRET en .env}
+    volumes:
+      - ..:/repo:ro
+    command:
+      - sh
+      - -c
+      - mkdir /tmp/r && tar -C /repo --exclude=node_modules --exclude=.git --exclude=dist -cf - backend frontend/src | tar -C /tmp/r -xf - && cd /tmp/r/backend && npm ci --no-audit --no-fund && npx tsx db/seed.ts
+    networks: [db, edge] # edge: salida a internet para npm ci
+    mem_limit: 1g
+
+networks:
+  edge: {}
+  db:
+    internal: true
+  dockerapi:
+    internal: true
+
+volumes:
+  mysql_data:
+  caddy_data:
+  caddy_config:
+  n8n_data:

@@ -98,7 +98,13 @@ function EditorForm({ existing, modules, lessons, allExercises }: { existing?: E
       expectedAnswer: f.expectedAnswer, tests: validTests, rules: existing?.rules ?? [],
       successNote: existing?.successNote ?? 'Tu solución cumple los casos de prueba.',
     }
-    await api.teacher.saveExercise(ex)
+    try {
+      await api.teacher.saveExercise(ex)
+    } catch (err) {
+      setSaving(false)
+      toast.show({ tone: 'error', title: 'No se pudo guardar el ejercicio', text: (err as Error).message })
+      return
+    }
     toast.show({ tone: 'success', title: existing ? 'Ejercicio actualizado' : 'Ejercicio creado', text: ex.published ? 'Visible para los estudiantes.' : 'Guardado como borrador.' })
     navigate('/docente/ejercicios')
   }

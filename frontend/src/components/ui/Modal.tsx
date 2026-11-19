@@ -17,6 +17,9 @@ interface ModalProps {
 export function Modal({ open, title, description, onClose, children, footer }: ModalProps) {
   const ref = useRef<HTMLDivElement>(null)
   const titleId = useId()
+  // Referencia al último `onClose`: si el efecto dependiera de él, cada render (cada tecla) devolvería el foco al primer campo.
+  const closeRef = useRef(onClose)
+  closeRef.current = onClose
 
   useEffect(() => {
     if (!open) return
@@ -29,7 +32,7 @@ export function Modal({ open, title, description, onClose, children, footer }: M
     const onKey = (e: KeyboardEvent) => {
       if (e.key === 'Escape') {
         e.stopPropagation()
-        onClose()
+        closeRef.current()
       }
       if (e.key === 'Tab' && node) {
         const els = [...node.querySelectorAll<HTMLElement>(FOCUSABLE)]
@@ -46,7 +49,7 @@ export function Modal({ open, title, description, onClose, children, footer }: M
       document.body.style.overflow = ''
       previous?.focus()
     }
-  }, [open, onClose])
+  }, [open])
 
   if (!open) return null
   return createPortal(

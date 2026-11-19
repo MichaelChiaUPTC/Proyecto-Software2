@@ -1,0 +1,40 @@
+import { existsSync } from 'node:fs'
+import { z } from 'zod'
+
+if (existsSync('.env')) process.loadEnvFile('.env')
+
+const schema = z.object({
+  NODE_ENV: z.enum(['development', 'test', 'production']).default('development'),
+  PORT: z.coerce.number().int().positive().default(3000),
+  // Saltos de proxy de confianza (Caddy = 1) para que req.ip y el rate limit vean la IP real; 0 = sin proxy.
+  TRUST_PROXY: z.coerce.number().int().min(0).default(0),
+  CORS_ORIGIN: z.string().default('http://localhost:5173'),
+  DB_HOST: z.string().default('127.0.0.1'),
+  DB_PORT: z.coerce.number().int().positive().default(3306),
+  DB_USER: z.string().default('uptc'),
+  DB_PASSWORD: z.string().default('uptc_dev'),
+  DB_NAME: z.string().default('uptc'),
+  JWT_SECRET: z.string().min(16, 'JWT_SECRET debe tener al menos 16 caracteres'),
+  JWT_EXPIRES_IN: z.string().default('8h'),
+  BCRYPT_COST: z.coerce.number().int().min(4).max(15).default(12),
+  LOGIN_RATE_LIMIT_MAX: z.coerce.number().int().positive().default(10),
+  SUBMIT_RATE_LIMIT_MAX: z.coerce.number().int().positive().default(10), // envíos por minuto y usuario
+  OUTBOX_INTERVAL_MS: z.coerce.number().int().positive().default(30_000),
+  // Motor de corrección (DockerRunner)
+  RUNNER_IMAGE: z.string().default('python:3.12-alpine'),
+  RUNNER_TIMEOUT_MS: z.coerce.number().int().positive().default(3000),
+  RUNNER_MEMORY: z.string().default('128m'),
+  RUNNER_CPUS: z.string().default('0.5'),
+  RUNNER_PIDS: z.coerce.number().int().positive().default(64),
+  RUNNER_MAX_CONCURRENT: z.coerce.number().int().positive().default(4),
+  RUNNER_DOCKER_BIN: z.string().default('docker'),
+  // Pistas con IA (Fase 3b)
+  AI_PROVIDER: z.enum(['gemini', 'claude', 'none']).default('none'),
+  AI_TIMEOUT_MS: z.coerce.number().int().positive().default(8000),
+  GEMINI_API_KEY: z.string().optional(),
+  GEMINI_MODEL: z.string().default('gemini-3.6-flash'),
+  ANTHROPIC_API_KEY: z.string().optional(),
+  ANTHROPIC_MODEL: z.string().default('claude-haiku-5-5'),
+})
+
+export const config = schema.parse(process.env)

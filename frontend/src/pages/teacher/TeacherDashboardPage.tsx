@@ -26,10 +26,10 @@ export default function TeacherDashboardPage() {
           return (
             <>
               <dl className="facts">
-                <div><dt>Estudiantes activos</dt><dd><CountUp value={d.active} /><span className="facts__of"> de {d.total}</span></dd><p className="t-caption">con actividad en los últimos 7 días</p></div>
-                <div><dt>Módulos publicados</dt><dd><CountUp value={d.published} /><span className="facts__of"> de {d.modulesTotal}</span></dd><p className="t-caption">{d.lessonsPublished} lecciones · {d.exercisesPublished} ejercicios</p></div>
-                <div><dt>Progreso promedio</dt><dd><CountUp value={d.avg} suffix="%" /></dd><p className="t-caption">del curso completo</p></div>
-                <div><dt>Requieren atención</dt><dd><CountUp value={d.attention.length} /></dd><p className="t-caption">inactivos o con baja tasa de éxito</p></div>
+                <div><dt>Estudiantes activos</dt><dd><CountUp value={d.active} /><span className="facts__of"> de {d.total}</span></dd><dd className="t-caption facts__note">con actividad en los últimos 7 días</dd></div>
+                <div><dt>Módulos publicados</dt><dd><CountUp value={d.published} /><span className="facts__of"> de {d.modulesTotal}</span></dd><dd className="t-caption facts__note">{d.lessonsPublished} lecciones · {d.exercisesPublished} ejercicios</dd></div>
+                <div><dt>Progreso promedio</dt><dd><CountUp value={d.avg} suffix="%" /></dd><dd className="t-caption facts__note">del curso completo</dd></div>
+                <div><dt>Requieren atención</dt><dd><CountUp value={d.attention.length} /></dd><dd className="t-caption facts__note">inactivos o con baja tasa de éxito</dd></div>
               </dl>
 
               <div className="tdash">
@@ -41,7 +41,7 @@ export default function TeacherDashboardPage() {
                   <ul className="attn">
                     {d.attention.map((s) => {
                       const days = daysSince(s.lastActivity)
-                      const reasons = [days >= 7 ? `Sin actividad hace ${days} días` : null, s.successRate < 40 ? `Éxito del ${s.successRate}%` : null].filter(Boolean).join(' · ')
+                      const reasons = [days >= 7 ? `Sin actividad hace ${days} días` : null, (s.attempts ?? 1) > 0 && s.successRate < 40 ? `Éxito del ${s.successRate}%` : null].filter(Boolean).join(' · ')
                       return (
                         <li key={s.id} className="attn__row">
                           <Avatar name={s.name} size="sm" />

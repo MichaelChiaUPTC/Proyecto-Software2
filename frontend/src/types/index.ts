@@ -1,4 +1,4 @@
-export type Role = 'student' | 'teacher'
+export type Role = 'student' | 'teacher' | 'admin'
 
 export interface User {
   id: string
@@ -9,6 +9,8 @@ export interface User {
   semester?: number
   group?: string
   joinedAt: string
+  /** Solo lo informa el servidor (gestión de usuarios). */
+  active?: boolean
 }
 
 export type Difficulty = 'basic' | 'medium' | 'advanced'
@@ -42,6 +44,8 @@ export interface Lesson {
 export interface TestCase {
   input: string
   expected: string
+  /** Solo en la vista del docente (servidor): el estudiante no lo ve. */
+  hidden?: boolean
 }
 
 export interface ExerciseRule {
@@ -129,6 +133,8 @@ export interface StudentRow {
   solved: number
   totalExercises: number
   successRate: number
+  /** Intentos enviados (lo informa el servidor); sin intentos, el 0 % de éxito no cuenta como alerta. */
+  attempts?: number
   lastActivity: string
   currentModule: string
 }
@@ -146,4 +152,10 @@ export interface SubmitResult {
   failedTests: number[]
   newBadges: string[]
   pointsGained: number
+}
+
+/** Respuesta de `POST /exercises/:id/ai-hint`: `ai` = generada por el modelo, `fallback` = pista fija del curso. */
+export interface AiHint {
+  hint: string
+  source: 'ai' | 'fallback'
 }

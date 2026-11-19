@@ -128,7 +128,7 @@
 .mfeature__side { display: flex; flex-direction: column; gap: var(--s-5); align-self: end; }
 .mfeature__side dd { margin-top: 6px; }
 .mfeature__pct { display: block; font-size: 2.5rem; font-weight: 600; letter-spacing: -0.04em; line-height: 1; margin-bottom: var(--s-3); }
-.mfeature__counts { display: flex; gap: var(--s-6); }
+.mfeature__counts { display: grid; grid-template-columns: auto auto; justify-content: start; column-gap: var(--s-6); }
 .mfeature__counts dd { font-size: 1.25rem; font-weight: 600; }
 
 .mindex { display: flex; flex-direction: column; }
@@ -267,6 +267,9 @@
 .feedback--initial .feedback__text, .feedback--running .feedback__text { color: var(--ink-3); font-size: var(--fs-caption); }
 .feedback__concept { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; padding: 6px 10px; border-radius: var(--r-sm); background: color-mix(in oklch, var(--bg-raised) 65%, transparent); border: 1px solid var(--err-line); font-size: var(--fs-caption); }
 .feedback__meta { font-size: var(--fs-caption); color: var(--ink-2); }
+.feedback__ai { display: flex; flex-direction: column; align-items: flex-start; gap: 6px; margin-top: 4px; }
+.feedback__ai-head { display: flex; }
+.feedback__ai-error { font-size: var(--fs-caption); color: var(--err); max-width: 64ch; }
 
 .tests { display: flex; flex-direction: column; gap: 4px; }
 .tests__item { display: flex; align-items: center; gap: var(--s-3); padding: 8px 12px; border: 1px solid var(--line); border-radius: var(--r-md); background: var(--bg-raised); font-size: var(--fs-code); min-width: 0; }
@@ -457,3 +460,5 @@
 
 /* El nodo actual de la ruta marca "estás aquí" una vez */
 .path__item--current .path__node { animation: pop 600ms var(--ease) 300ms backwards; }
+
+.facts dd.facts__note { font-size: var(--fs-caption); font-weight: 400; letter-spacing: normal; line-height: 1.4; }

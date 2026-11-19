@@ -1,0 +1,19 @@
+{
+  "name": "uptc-plataforma-educativa",
+  "private": true,
+  "version": "0.1.0",
+  "description": "Raíz del monorepo: orquesta los scripts de evidencia (Fase 5) y de métricas y manuales (Fase 6). Cada paquete tiene su propio package.json.",
+  "scripts": {
+    "evidence": "powershell -NoProfile -File scripts/evidencias.ps1",
+    "evidence:static": "node scripts/informes.mjs estaticas",
+    "evidence:coverage": "node scripts/informes.mjs cobertura",
+    "evidence:load": "powershell -NoProfile -File perf/ejecutar-carga.ps1",
+    "e2e": "npm --prefix e2e test",
+    "metrics": "node scripts/metricas.mjs",
+    "manual:capturas": "npm --prefix e2e run manual",
+    "manuales": "node scripts/manuales.mjs"
+  },
+  "devDependencies": {
+    "marked": "^18.2.1"
+  }
+}

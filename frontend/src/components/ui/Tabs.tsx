@@ -29,7 +29,6 @@ export function Tabs({ items, value, onChange, label, className }: { items: TabI
           role="tab"
           id={`${base}-${t.id}`}
           aria-selected={value === t.id}
-          aria-controls={`${base}-panel-${t.id}`}
           tabIndex={value === t.id ? 0 : -1}
           className="tabs__tab"
           onClick={() => onChange(t.id)}

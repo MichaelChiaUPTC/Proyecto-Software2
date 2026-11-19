@@ -2,6 +2,7 @@ import { Navigate, Outlet, useLocation, useMatch } from 'react-router-dom'
 import { MobileTabBar, MobileTopBar, Sidebar } from '@/components/layout/Sidebar'
 import { useAuth } from '@/hooks/useAuth'
 import type { Role } from '@/types'
+import { homeFor } from '@/utils/format'
 
 /**
  * Estructura de aplicación de escritorio: barra lateral + contenido con ancho controlado.
@@ -16,7 +17,7 @@ export function AppLayout({ role }: { role: Role }) {
   const focusTeacherEditor = useMatch('/docente/ejercicios/:id')
 
   if (!user) return <Navigate to="/login" replace state={{ from: location.pathname }} />
-  if (user.role !== role) return <Navigate to={user.role === 'student' ? '/' : '/docente'} replace />
+  if (user.role !== role) return <Navigate to={homeFor(user.role)} replace />
 
   const workspace = !!focusExercise
   const hideTabs = !!(focusLesson || focusExercise || focusTeacherEditor)

@@ -20,6 +20,7 @@ const Content = lazy(() => import('@/pages/teacher/ContentPage'))
 const TeacherExercises = lazy(() => import('@/pages/teacher/TeacherExercisesPage'))
 const ExerciseEditor = lazy(() => import('@/pages/teacher/ExerciseEditorPage'))
 const Reports = lazy(() => import('@/pages/teacher/ReportsPage'))
+const AdminUsers = lazy(() => import('@/pages/admin/AdminUsersPage'))
 
 export default function App() {
   return (
@@ -49,6 +50,10 @@ export default function App() {
                 <Route path="ejercicios/nuevo" element={<ExerciseEditor />} />
                 <Route path="ejercicios/:id" element={<ExerciseEditor />} />
                 <Route path="reportes" element={<Reports />} />
+              </Route>
+
+              <Route path="admin" element={<AppLayout role="admin" />}>
+                <Route index element={<AdminUsers />} />
               </Route>
 
               <Route path="*" element={<Navigate to="/" replace />} />
