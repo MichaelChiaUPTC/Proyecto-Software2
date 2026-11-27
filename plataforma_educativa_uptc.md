@@ -29,8 +29,9 @@ Conjunto de elementos visuales y funcionales que permiten la interacción entre 
 ### Aprendizaje autónomo
 Proceso formativo en el cual el estudiante asume la responsabilidad de planificar, regular y evaluar su propio aprendizaje, gestionando recursos y tiempos de manera independiente, apoyado en herramientas tecnológicas que facilitan el acceso a contenidos y retroalimentación.
 
-### Angular
-Framework de desarrollo web de código abierto basado en TypeScript, mantenido por Google, orientado a la construcción de aplicaciones web dinámicas de una sola página (SPA). Se fundamenta en una arquitectura basada en componentes y en el patrón Modelo-Vista-Controlador (MVC), incorporando herramientas para el manejo de rutas, inyección de dependencias, enlace bidireccional de datos y consumo de servicios mediante HTTP. Facilita el desarrollo estructurado, modular y escalable de interfaces de usuario.
+### React
+
+Biblioteca de JavaScript utilizada para construir interfaces mediante componentes reutilizables. En este proyecto se emplea con TypeScript y Vite, conectada al backend mediante una API REST.
 
 [1. INTRODUCCIÓN	4](https://docs.google.com/document/d/1od7B9GpARIYsrxNJFyv24KIUFVLqUPjIIZx2zr1R78w/edit?tab=t.0#heading=h.vwgq2p19hf4e)
 [**1.1. Descripción del problema	4**](https://docs.google.com/document/d/1od7B9GpARIYsrxNJFyv24KIUFVLqUPjIIZx2zr1R78w/edit?tab=t.0#heading=h.i2srsms67i06)
