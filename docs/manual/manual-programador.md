@@ -662,3 +662,18 @@ La guía paso a paso para quien crea la VM es [`deploy/README.md`](../../deploy/
 | El CSV abre todo en una columna en Excel | Excel en español usa `;` como separador: importar con *Datos → Desde texto/CSV*. |
 | El generador de PDF avisa que no dibujó los diagramas | Mermaid se descarga de internet al generar; sin conexión quedan como código. Reintenta con red. |
 | `npm run manual:capturas` tarda varios minutos al inicio | Prepara datos reales respetando el límite de 10 envíos por minuto por usuario. |
+
+## Solucion de conflictos de puerto MySQL en Windows
+
+Si el puerto 3306 esta ocupado por otra instalacion de MySQL:
+
+1. Cambiar MYSQL_PORT a 3307 en el archivo .env principal.
+2. Cambiar DB_PORT a 3307 en backend/.env para ejecucion local.
+3. Ejecutar docker compose up -d.
+4. Verificar los servicios con docker compose ps.
+
+Los contenedores de la API y n8n deben conservar el host mysql
+y el puerto interno 3306.
+
+No es necesario desinstalar MySQL ni modificar el codigo fuente.
+
